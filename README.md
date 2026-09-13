@@ -131,3 +131,5 @@ Antes de usarlo en un entorno real:
 - **USUARIO**: consulta de lectura de su propia carrera.
 - **DIRECTOR**: administra el mapa curricular y el catálogo de optativas de su carrera.
 - **ADMIN**: administra todas las carreras y usuarios.
+
+<!-- write-access verification -->
