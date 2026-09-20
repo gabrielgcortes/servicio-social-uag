@@ -4,7 +4,7 @@ import CurriculumMap from './CurriculumMap'
 import ValidationPanel from './ValidationPanel'
 import { curriculumSummary } from '../utils/validation'
 
-export default function MapPage({ program, subjects, validations, onAdd, onEdit, onMove, onReorder, onExport, onNotify }) {
+export default function MapPage({ program, subjects, validations, onAdd, onEdit, onMove, onReorder, onDropSubject, onExport, onNotify }) {
   const [view, setView] = useState('cycles')
   const [panel, setPanel] = useState(false)
   const summary = useMemo(() => curriculumSummary(subjects), [subjects])
@@ -52,14 +52,27 @@ export default function MapPage({ program, subjects, validations, onAdd, onEdit,
             {[['cycles', 'Vista por ciclos', 'layers'], ['areas', 'Por área', 'grid'], ['validations', 'Validaciones', 'circleCheck']].map(([id, label, icon]) => <button key={id} type="button" onClick={() => setView(id)} className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${view === id ? 'bg-[#A6192E] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}><Icon name={icon} size={13} /> {label}</button>)}
           </div>
           <div className="flex items-center gap-2">
-            <p className="hidden text-[10px] text-slate-400 sm:block">Usa “Mover” o las flechas para reorganizar las asignaturas.</p>
+            <p className="hidden text-[10px] text-slate-400 sm:block">Arrastra asignaturas entre ciclos o dentro de la columna para reorganizarlas.</p>
             <button type="button" onClick={() => setPanel((value) => !value)} className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[11px] font-semibold ${panel ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600'}`}><Icon name="alert" size={13} /> Panel de validación</button>
           </div>
         </div>
 
         <div className={`mt-3 grid gap-3 ${panel && view !== 'validations' ? 'xl:grid-cols-[minmax(0,1fr)_360px]' : ''}`}>
           <main className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            {view === 'validations' ? <ValidationPanel validations={validations} onGoToSubject={goToSubject} /> : <CurriculumMap view={view} subjects={subjects} program={program} onAdd={onAdd} onEdit={onEdit} onMove={onMove} onReorder={onReorder} />}
+            {view === 'validations' ? (
+              <ValidationPanel validations={validations} onGoToSubject={goToSubject} />
+            ) : (
+              <CurriculumMap
+                view={view}
+                subjects={subjects}
+                program={program}
+                onAdd={onAdd}
+                onEdit={onEdit}
+                onMove={onMove}
+                onReorder={onReorder}
+                onDropSubject={onDropSubject}
+              />
+            )}
           </main>
           {panel && view !== 'validations' && <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center justify-between"><div><h3 className="text-sm font-bold text-slate-900">Validación en vivo</h3><p className="mt-0.5 text-[10px] text-slate-400">Se actualiza al mover o editar</p></div><button type="button" onClick={() => setPanel(false)} aria-label="Cerrar panel" className="grid h-7 w-7 place-items-center rounded-lg bg-slate-100 text-slate-500"><Icon name="x" size={13} /></button></div><div className="mt-4"><ValidationPanel compact validations={validations} onGoToSubject={goToSubject} /></div></aside>}
         </div>

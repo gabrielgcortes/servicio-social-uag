@@ -60,6 +60,7 @@ function MapPageWrapper({
   onEditSubject,
   onMoveSubject,
   onReorderSubject,
+  onDropSubject,
   onExport,
   onNotify,
 }) {
@@ -90,6 +91,7 @@ function MapPageWrapper({
       onEdit={onEditSubject}
       onMove={onMoveSubject}
       onReorder={onReorderSubject}
+      onDropSubject={onDropSubject}
       onExport={() => onExport(program)}
       onNotify={onNotify}
     />
@@ -220,6 +222,53 @@ function App() {
     })
   }
 
+  const handleDropSubject = (subjectId, targetCycle, targetSubjectId = null, placeAfter = false) => {
+    if (!subjectId) return
+    const numericTargetCycle = Number(targetCycle)
+    setSubjects((items) => {
+      const subjectToMove = items.find((s) => s.id === subjectId)
+      if (!subjectToMove) return items
+
+      // Remove dragged subject from the list
+      const remaining = items.filter((s) => s.id !== subjectId)
+      const updatedSubject = { ...subjectToMove, cycle: numericTargetCycle }
+
+      // Case 1: Dropped onto a specific target subject
+      if (targetSubjectId && targetSubjectId !== subjectId) {
+        const targetIndex = remaining.findIndex((s) => s.id === targetSubjectId)
+        if (targetIndex !== -1) {
+          const insertIndex = placeAfter ? targetIndex + 1 : targetIndex
+          const result = [...remaining]
+          result.splice(insertIndex, 0, updatedSubject)
+          return result
+        }
+      }
+
+      // Case 2: Dropped into a cycle column (append at the end of that cycle)
+      const cycleItems = remaining.filter((s) => s.cycle === numericTargetCycle)
+      if (cycleItems.length > 0) {
+        const lastItem = cycleItems[cycleItems.length - 1]
+        const lastIndex = remaining.findIndex((s) => s.id === lastItem.id)
+        const result = [...remaining]
+        result.splice(lastIndex + 1, 0, updatedSubject)
+        return result
+      } else {
+        // No items in this cycle yet, find position among surrounding cycles
+        const nextCycleItem = remaining.find((s) => s.cycle > numericTargetCycle)
+        if (nextCycleItem) {
+          const nextIndex = remaining.findIndex((s) => s.id === nextCycleItem.id)
+          const result = [...remaining]
+          result.splice(nextIndex, 0, updatedSubject)
+          return result
+        }
+        return [...remaining, updatedSubject]
+      }
+    })
+
+    const moved = subjects.find((s) => s.id === subjectId)
+    setToast(`${moved?.name || 'La asignatura'} se colocó en el ciclo ${numericTargetCycle}.`)
+  }
+
   const [title, subtitle] = getHeaderMeta(location.pathname)
 
   return (
@@ -287,6 +336,7 @@ function App() {
                 }
                 onMoveSubject={moveSubject}
                 onReorderSubject={reorderSubject}
+                onDropSubject={handleDropSubject}
                 onExport={(program) => setExportProgram(program)}
                 onNotify={setToast}
               />
