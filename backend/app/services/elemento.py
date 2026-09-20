@@ -252,6 +252,15 @@ def _validar_y_confirmar(
     db.flush()
     ctx = build_context(db, plan_id, operacion="elemento")
     violaciones = _motor.evaluate(ctx, scope=RuleScope.SEMESTRE)
+    # Al colocar o mover materias ya se conoce su ciclo; aquí puede validarse
+    # por primera vez que la seriación apunte realmente a un ciclo anterior.
+    codigos_seriacion = {
+        "SERIACION_MISMO_PLAN", "SERIACION_CICLO", "SERIACION_ORDEN_SEMESTRE",
+        "SERIACION_PROHIBIDA", "SERIACION_NUMERACION_ROMANA", "SECUENCIA_DOCUMENTAL",
+    }
+    violaciones.extend(
+        v for v in _motor.evaluate(ctx, scope=RuleScope.MATERIA) if v.code in codigos_seriacion
+    )
     errores = [v for v in violaciones if v.severity == Severity.ERROR]
     if errores:
         db.rollback()

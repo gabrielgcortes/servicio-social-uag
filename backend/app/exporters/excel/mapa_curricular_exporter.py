@@ -26,6 +26,12 @@ def escribir_mapa(hoja: Worksheet, mapa: dict) -> None:
                     materia.horas_independientes if materia else "",
                     float(materia.creditos) if materia and materia.creditos is not None else "",
                     "Obligatoria",
+                    materia.area_formacion.value if materia and materia.area_formacion else "",
+                    materia.tipo_aula.value if materia and materia.tipo_aula else (materia.instalaciones or "" if materia else ""),
+                    materia.modalidad.value if materia and materia.modalidad else "",
+                    materia.docente_sugerido or "" if materia else "",
+                    "Sí" if materia and materia.aporte_sustancial else "No",
+                    materia.programa_asignatura or "" if materia else "",
                 ]
             else:
                 valores = [
@@ -36,6 +42,12 @@ def escribir_mapa(hoja: Worksheet, mapa: dict) -> None:
                     elemento.horas_independientes,
                     float(elemento.creditos) if elemento.creditos is not None else "",
                     "Espacio optativo",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
                 ]
             for columna, valor in enumerate(valores, start=1):
                 hoja.cell(row=fila, column=columna, value=valor)

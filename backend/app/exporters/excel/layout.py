@@ -6,6 +6,7 @@ from __future__ import annotations
 
 HOJA_MAPA = "Mapa curricular"
 HOJA_OPTATIVAS = "Optativas"
+HOJA_FLEXIBLE = "Flexible"
 
 FILA_INICIAL_MAPA = 1
 COLUMNAS_MAPA = [
@@ -16,6 +17,12 @@ COLUMNAS_MAPA = [
     "Horas independientes",
     "Créditos",
     "Tipo",
+    "Área de formación",
+    "Instalación",
+    "Modalidad",
+    "Docente sugerido",
+    "Aporte sustancial",
+    "Programa de asignatura",
 ]
 
 FILA_INICIAL_OPTATIVAS = 1
@@ -28,4 +35,9 @@ COLUMNAS_OPTATIVAS = [
     "Instalaciones",
     "Modalidad",
     "Seriación",
+    "Área de formación",
+    "Docente sugerido",
+    "Aporte sustancial",
+    "Programa de asignatura",
+    "Ciclos disponibles",
 ]

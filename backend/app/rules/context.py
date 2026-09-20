@@ -9,6 +9,8 @@ from app.models.materia import Materia
 from app.models.plan_curricular import PlanCurricular
 from app.models.semestre import Semestre
 from app.models.semestre_elemento import SemestreElemento
+from app.models.configuracion_reglas import ConfiguracionReglasPlan
+from app.models.autorizacion_excepcion import AutorizacionExcepcion
 from app.rules.base import RuleContext
 
 
@@ -29,6 +31,22 @@ def build_context(db: Session, plan_id: int, *, operacion: str | None = None) ->
     materias = list(
         db.execute(select(Materia).where(Materia.plan_curricular_id == plan_id)).scalars()
     )
+    configuracion = db.execute(
+        select(ConfiguracionReglasPlan)
+        .where(
+            ConfiguracionReglasPlan.plan_curricular_id == plan_id,
+            ConfiguracionReglasPlan.vigente.is_(True),
+        )
+        .order_by(ConfiguracionReglasPlan.version.desc())
+    ).scalars().first()
+    autorizaciones = list(
+        db.execute(
+            select(AutorizacionExcepcion).where(
+                AutorizacionExcepcion.plan_curricular_id == plan_id,
+                AutorizacionExcepcion.activa.is_(True),
+            )
+        ).scalars()
+    )
 
     return RuleContext(
         carrera=carrera,
@@ -37,4 +55,6 @@ def build_context(db: Session, plan_id: int, *, operacion: str | None = None) ->
         elementos_por_semestre={s.id: s.elementos for s in semestres},
         materias_por_id={m.id: m for m in materias},
         operacion=operacion,
+        configuracion=configuracion,
+        autorizaciones=autorizaciones,
     )

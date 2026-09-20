@@ -9,6 +9,21 @@ from app.rules.seriacion import (
     SeriacionCicloRule,
     SeriacionMismoPlanRule,
     SeriacionOrdenSemestreRule,
+    SeriacionPermitidaRule,
+    SeriacionRomanaRule,
+    SecuenciasDocumentalesRule,
+)
+from app.rules.academicas import (
+    AreaFormacionRule,
+    ClaveMateriaRule,
+    EstandarMaestriaRule,
+    EspaciosOptativosMinimosRule,
+    HorasFrecuenciaRule,
+    LimitesPlanRule,
+    MateriasRequeridasRule,
+    MaxMateriasCicloRule,
+    OptativasMinimosRule,
+    PracticasCapstoneRule,
 )
 
 REGLAS_ACTIVAS: list[Rule] = [
@@ -18,12 +33,20 @@ REGLAS_ACTIVAS: list[Rule] = [
     SeriacionMismoPlanRule(),
     SeriacionCicloRule(),
     SeriacionOrdenSemestreRule(),
+    SeriacionPermitidaRule(),
+    SeriacionRomanaRule(),
+    SecuenciasDocumentalesRule(),
+    MaxMateriasCicloRule(),
+    LimitesPlanRule(),
+    HorasFrecuenciaRule(),
+    AreaFormacionRule(),
+    OptativasMinimosRule(),
+    EspaciosOptativosMinimosRule(),
+    PracticasCapstoneRule(),
+    MateriasRequeridasRule(),
+    EstandarMaestriaRule(),
+    ClaveMateriaRule(),
 ]
-
-# Preparadas para fases futuras (no se registran hasta implementarse):
-# MIN_CREDITOS_OPTATIVAS, MAX_MATERIAS_SEMESTRE, TOTAL_CREDITOS_CARRERA,
-# RESIDENCIA_MINIMA, excepciones por materia.
-
 
 def crear_motor() -> RuleEngine:
     return RuleEngine(REGLAS_ACTIVAS)

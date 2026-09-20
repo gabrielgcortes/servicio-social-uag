@@ -11,6 +11,8 @@ from app.models.materia import Materia
 from app.models.plan_curricular import PlanCurricular
 from app.models.semestre import Semestre
 from app.models.semestre_elemento import SemestreElemento
+from app.models.configuracion_reglas import ConfiguracionReglasPlan
+from app.models.autorizacion_excepcion import AutorizacionExcepcion
 
 
 class Severity(str, enum.Enum):
@@ -51,6 +53,8 @@ class RuleContext:
     elementos_por_semestre: dict[int, list[SemestreElemento]]
     materias_por_id: dict[int, Materia]
     operacion: str | None = None
+    configuracion: ConfiguracionReglasPlan | None = None
+    autorizaciones: list[AutorizacionExcepcion] = field(default_factory=list)
 
 
 class Rule(Protocol):

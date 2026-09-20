@@ -14,10 +14,19 @@ from app.schemas.materia import (
     MateriaMutationResponse,
     MateriaRead,
     MateriaUpdate,
+    OptativaInstitucionalRead,
 )
 from app.services import materia as materia_service
 
 router = APIRouter(tags=["materias"])
+
+
+@router.get("/api/catalogos/optativas-institucionales", response_model=list[OptativaInstitucionalRead])
+def list_optativas_institucionales(
+    principal: Principal = Depends(get_current_principal),
+    db: Session = Depends(get_db),
+) -> list[OptativaInstitucionalRead]:
+    return [OptativaInstitucionalRead.model_validate(o) for o in materia_service.list_optativas_institucionales(db)]
 
 
 @router.get("/api/planes/{plan_id}/materias", response_model=list[MateriaRead])

@@ -3,13 +3,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, Computed, ForeignKey, Index, Integer, Numeric, String
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Computed, ForeignKey, Index, Integer, Numeric, String, Text
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy import UniqueConstraint
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
-from app.models.enums import TipoMateria
+from app.models.enums import AreaFormacion, ModalidadPrograma, TipoAula, TipoMateria
 
 if TYPE_CHECKING:
     from app.models.plan_curricular import PlanCurricular
@@ -47,7 +48,26 @@ class Materia(Base, TimestampMixin):
         Computed("(horas_docente + horas_independientes)::numeric / 16", persisted=True),
     )
     instalaciones: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    modalidad: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    tipo_aula: Mapped[TipoAula | None] = mapped_column(
+        SAEnum(TipoAula, name="tipo_aula", native_enum=True, values_callable=lambda enum: [e.value for e in enum]), nullable=True
+    )
+    modalidad: Mapped[ModalidadPrograma | None] = mapped_column(
+        SAEnum(ModalidadPrograma, name="modalidad_programa", native_enum=True), nullable=True
+    )
+    area_formacion: Mapped[AreaFormacion | None] = mapped_column(
+        SAEnum(AreaFormacion, name="area_formacion", native_enum=True), nullable=True
+    )
+    aporte_sustancial: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    docente_sugerido: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    programa_asignatura: Mapped[str | None] = mapped_column(Text, nullable=True)
+    usa_numeracion_romana: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    es_capstone: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    es_practica_profesional: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    es_topico_selecto: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    excepcion_horas_estandar: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    ciclos_disponibles: Mapped[list[int]] = mapped_column(
+        ARRAY(Integer), nullable=False, default=list, server_default="{}"
+    )
     tipo: Mapped[TipoMateria] = mapped_column(
         SAEnum(TipoMateria, name="tipo_materia", native_enum=True), nullable=False
     )

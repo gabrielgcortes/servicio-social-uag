@@ -11,12 +11,13 @@ from app.core.config import get_settings
 from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.models.carrera import Carrera
-from app.models.enums import EstadoPlanCurricular, RolUsuario, TipoElemento, TipoMateria
+from app.models.enums import AreaFormacion, EstadoPlanCurricular, ModalidadPrograma, RolUsuario, TipoAula, TipoElemento, TipoMateria
 from app.models.materia import Materia
 from app.models.plan_curricular import PlanCurricular
 from app.models.semestre import Semestre
 from app.models.semestre_elemento import SemestreElemento
 from app.models.usuario import Usuario
+from app.services import configuracion_reglas as config_service
 
 settings = get_settings()
 
@@ -62,9 +63,12 @@ def _seed_carrera_lsw(db: Session) -> None:
         anio_inicio=2025,
         estado=EstadoPlanCurricular.VIGENTE,
         max_creditos_semestre=50,
+        mnemonico="LSW",
+        decanato_otro="Tecnologías de información",
     )
     db.add(plan)
     db.flush()
+    config_service.crear_inicial(db, plan)
 
     semestres = {n: Semestre(plan_curricular_id=plan.id, numero=n) for n in range(1, 9)}
     db.add_all(semestres.values())
@@ -78,6 +82,11 @@ def _seed_carrera_lsw(db: Session) -> None:
         horas_docente=48,
         horas_independientes=64,
         tipo=TipoMateria.OPTATIVA,
+        area_formacion=AreaFormacion.PROFESIONAL,
+        tipo_aula=TipoAula.LABORATORIO,
+        modalidad=ModalidadPrograma.ESCOLARIZADA,
+        ciclos_disponibles=[7],
+        usa_numeracion_romana=True,
     )
     db.add(redes_iii)
     db.flush()
@@ -92,6 +101,11 @@ def _seed_carrera_lsw(db: Session) -> None:
                 horas_independientes=64,
                 tipo=TipoMateria.OPTATIVA,
                 seriacion_materia_id=redes_iii.id,
+                area_formacion=AreaFormacion.PROFESIONAL,
+                tipo_aula=TipoAula.LABORATORIO,
+                modalidad=ModalidadPrograma.ESCOLARIZADA,
+                ciclos_disponibles=[7],
+                usa_numeracion_romana=True,
             ),
             Materia(
                 plan_curricular_id=plan.id,
@@ -100,6 +114,10 @@ def _seed_carrera_lsw(db: Session) -> None:
                 horas_docente=48,
                 horas_independientes=64,
                 tipo=TipoMateria.OPTATIVA,
+                area_formacion=AreaFormacion.PROFESIONAL,
+                tipo_aula=TipoAula.LABORATORIO,
+                modalidad=ModalidadPrograma.ESCOLARIZADA,
+                ciclos_disponibles=[7],
             ),
         ]
     )
@@ -122,6 +140,9 @@ def _seed_carrera_lsw(db: Session) -> None:
             horas_docente=horas_docente,
             horas_independientes=horas_independientes,
             tipo=TipoMateria.OBLIGATORIA,
+            area_formacion=AreaFormacion.DISCIPLINAR,
+            tipo_aula=TipoAula.AULA,
+            modalidad=ModalidadPrograma.ESCOLARIZADA,
         )
         db.add(materia)
         db.flush()

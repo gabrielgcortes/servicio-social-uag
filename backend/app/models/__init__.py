@@ -9,3 +9,6 @@ from app.models.semestre_elemento import SemestreElemento  # noqa: F401
 from app.models.usuario import Usuario  # noqa: F401
 from app.models.refresh_token import RefreshToken  # noqa: F401
 from app.models.auditoria import Auditoria  # noqa: F401
+from app.models.configuracion_reglas import ConfiguracionReglasPlan  # noqa: F401
+from app.models.autorizacion_excepcion import AutorizacionExcepcion  # noqa: F401
+from app.models.optativa_institucional import OptativaInstitucional  # noqa: F401
