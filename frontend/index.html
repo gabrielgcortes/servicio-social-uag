@@ -1,10 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <meta name="theme-color" content="#173b69" />
+    <meta name="description" content="Prototipo de gestión de mapas curriculares universitarios" />
+    <title>Mapa Académico · Gestión curricular</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: { university: { 700: '#245a96', 800: '#173b69', 900: '#102d52' } },
+            boxShadow: { panel: '0 18px 50px rgba(15, 23, 42, .08)' }
+          }
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
