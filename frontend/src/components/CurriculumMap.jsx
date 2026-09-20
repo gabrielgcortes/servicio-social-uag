@@ -62,7 +62,7 @@ export default function CurriculumMap({ view, subjects, program, onAdd, onEdit, 
         <CycleColumn
           key={cycle}
           cycle={cycle}
-          subjects={subjects.filter((item) => item.cycle === cycle)}
+          subjects={subjects.filter((item) => Number(item.cycle) === cycle)}
           program={program}
           draggedSubjectId={draggedSubjectId}
           onDragStart={handleDragStart}

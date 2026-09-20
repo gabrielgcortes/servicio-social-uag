@@ -37,7 +37,7 @@ export default function SubjectCard({
   }
 
   const handleDragOver = (e) => {
-    if (!draggedSubjectId || draggedSubjectId === subject.id) return
+    if (!draggedSubjectId || String(draggedSubjectId) === String(subject.id)) return
     e.preventDefault()
     e.stopPropagation()
     e.dataTransfer.dropEffect = 'move'
@@ -54,13 +54,13 @@ export default function SubjectCard({
   }
 
   const handleDrop = (e) => {
-    if (!draggedSubjectId || draggedSubjectId === subject.id) return
+    if (!draggedSubjectId || String(draggedSubjectId) === String(subject.id)) return
     e.preventDefault()
     e.stopPropagation()
     const id = e.dataTransfer.getData('text/plain') || draggedSubjectId
     const placeAfter = dropPosition === 'bottom'
     setDropPosition(null)
-    if (id && id !== subject.id && onDropSubject) {
+    if (id && String(id) !== String(subject.id) && onDropSubject) {
       onDropSubject(id, subject.cycle, subject.id, placeAfter)
     }
   }

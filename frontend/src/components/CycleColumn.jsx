@@ -40,7 +40,7 @@ export default function CycleColumn({
     }
   }
 
-  const isDraggingSource = subjects.some((s) => s.id === draggedSubjectId)
+  const isDraggingSource = subjects.some((s) => String(s.id) === String(draggedSubjectId))
 
   return (
     <section
