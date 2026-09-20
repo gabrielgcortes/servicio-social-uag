@@ -11,6 +11,7 @@ from app.api.routers.carreras import router as carreras_router
 from app.api.routers.elementos import router as elementos_router
 from app.api.routers.export import router as export_router
 from app.api.routers.materias import router as materias_router
+from app.api.routers.planes import router as planes_router
 from app.api.routers.semestres import router as semestres_router
 from app.api.routers.usuarios import router as usuarios_router
 from app.core.config import get_settings
@@ -43,6 +44,7 @@ async def agregar_cabeceras_de_seguridad(request: Request, call_next):
 app.include_router(auth_router)
 app.include_router(usuarios_router)
 app.include_router(carreras_router)
+app.include_router(planes_router)
 app.include_router(semestres_router)
 app.include_router(materias_router)
 app.include_router(elementos_router)

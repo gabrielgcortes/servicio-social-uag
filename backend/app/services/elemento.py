@@ -38,14 +38,18 @@ def get_elemento(db: Session, elemento_id: int) -> SemestreElemento:
 
 
 def crear_elemento_materia(
-    db: Session, semestre_id: int, payload: ElementoMateriaCreate
+    db: Session,
+    semestre_id: int,
+    payload: ElementoMateriaCreate,
+    *,
+    actor_id: int | None = None,
 ) -> tuple[SemestreElemento, list[dict]]:
     semestre = _get_semestre(db, semestre_id)
     materia = materia_repo.get_by_id(db, payload.materia_id)
     if materia is None:
         raise NotFoundError("Materia no encontrada")
-    if materia.carrera_id != semestre.carrera_id:
-        raise BusinessRuleError("La materia no pertenece a esta carrera")
+    if materia.plan_curricular_id != semestre.plan_curricular_id:
+        raise BusinessRuleError("La materia no pertenece al mismo plan curricular")
     if materia.tipo != TipoMateria.OBLIGATORIA:
         raise BusinessRuleError(
             "Una materia optativa no puede colocarse directamente en el mapa; "
@@ -79,11 +83,21 @@ def crear_elemento_materia(
         orden=elemento_repo.siguiente_orden(db, semestre_id),
     )
     elemento_repo.add(db, elemento)
-    return _validar_y_confirmar(db, semestre.carrera_id, elemento)
+    return _validar_y_confirmar(
+        db,
+        semestre.plan_curricular_id,
+        elemento,
+        actor_id=actor_id,
+        audit_meta={"accion": "elemento_creado", "datos_despues": {"materia_id": materia.id}},
+    )
 
 
 def crear_espacio_optativo(
-    db: Session, semestre_id: int, payload: ElementoEspacioOptativoCreate
+    db: Session,
+    semestre_id: int,
+    payload: ElementoEspacioOptativoCreate,
+    *,
+    actor_id: int | None = None,
 ) -> tuple[SemestreElemento, list[dict]]:
     semestre = _get_semestre(db, semestre_id)
     elemento = SemestreElemento(
@@ -95,11 +109,21 @@ def crear_espacio_optativo(
         orden=elemento_repo.siguiente_orden(db, semestre_id),
     )
     elemento_repo.add(db, elemento)
-    return _validar_y_confirmar(db, semestre.carrera_id, elemento)
+    return _validar_y_confirmar(
+        db,
+        semestre.plan_curricular_id,
+        elemento,
+        actor_id=actor_id,
+        audit_meta={"accion": "elemento_creado", "datos_despues": {"nombre": elemento.nombre}},
+    )
 
 
 def actualizar_espacio_optativo(
-    db: Session, elemento_id: int, payload: EspacioOptativoUpdate
+    db: Session,
+    elemento_id: int,
+    payload: EspacioOptativoUpdate,
+    *,
+    actor_id: int | None = None,
 ) -> tuple[SemestreElemento, list[dict]]:
     elemento = get_elemento(db, elemento_id)
     if elemento.tipo != TipoElemento.ESPACIO_OPTATIVO:
@@ -114,7 +138,13 @@ def actualizar_espacio_optativo(
         elemento.horas_independientes = payload.horas_independientes
 
     semestre = _get_semestre(db, elemento.semestre_id)
-    return _validar_y_confirmar(db, semestre.carrera_id, elemento)
+    return _validar_y_confirmar(
+        db,
+        semestre.plan_curricular_id,
+        elemento,
+        actor_id=actor_id,
+        audit_meta={"accion": "elemento_modificado"},
+    )
 
 
 def eliminar_elemento(db: Session, elemento_id: int, *, actor_id: int | None = None) -> None:
@@ -127,14 +157,17 @@ def eliminar_elemento(db: Session, elemento_id: int, *, actor_id: int | None = N
         accion="elemento_eliminado",
         entidad="semestre_elemento",
         entidad_id=elemento.id,
-        carrera_id=semestre.carrera_id,
+        carrera_id=semestre.plan_curricular.carrera_id,
+        plan_curricular_id=semestre.plan_curricular_id,
         datos_antes={"tipo": elemento.tipo.value, "materia_id": elemento.materia_id},
     )
     db.commit()
 
 
-def reordenar(db: Session, semestre_id: int, elemento_ids: list[int]) -> list[SemestreElemento]:
-    _get_semestre(db, semestre_id)
+def reordenar(
+    db: Session, semestre_id: int, elemento_ids: list[int], *, actor_id: int | None = None
+) -> list[SemestreElemento]:
+    semestre = _get_semestre(db, semestre_id)
     actuales = elemento_repo.list_by_semestre(db, semestre_id)
     if {e.id for e in actuales} != set(elemento_ids) or len(elemento_ids) != len(actuales):
         raise BusinessRuleError(
@@ -145,6 +178,16 @@ def reordenar(db: Session, semestre_id: int, elemento_ids: list[int]) -> list[Se
     for orden, elemento_id_ in enumerate(elemento_ids):
         por_id[elemento_id_].orden = orden
 
+    audit.registrar(
+        db,
+        usuario_id=actor_id,
+        accion="elementos_reordenados",
+        entidad="semestre",
+        entidad_id=semestre.id,
+        carrera_id=semestre.plan_curricular.carrera_id,
+        plan_curricular_id=semestre.plan_curricular_id,
+        datos_despues={"elemento_ids": elemento_ids},
+    )
     db.commit()
     return elemento_repo.list_by_semestre(db, semestre_id)
 
@@ -161,8 +204,8 @@ def mover_elemento(
     semestre_origen = _get_semestre(db, elemento.semestre_id)
     semestre_destino = _get_semestre(db, semestre_destino_id)
 
-    if semestre_origen.carrera_id != semestre_destino.carrera_id:
-        raise BusinessRuleError("No se puede mover un elemento a otra carrera")
+    if semestre_origen.plan_curricular_id != semestre_destino.plan_curricular_id:
+        raise BusinessRuleError("No se puede mover un elemento a otro plan curricular")
     if semestre_origen.id == semestre_destino.id:
         raise BusinessRuleError(
             "Para reordenar dentro del mismo semestre usa el endpoint de reordenado"
@@ -187,7 +230,7 @@ def mover_elemento(
         "datos_despues": {"semestre_id": semestre_destino.id, "semestre_numero": semestre_destino.numero},
     }
     return _validar_y_confirmar(
-        db, semestre_destino.carrera_id, elemento, actor_id=actor_id, audit_meta=audit_meta
+        db, semestre_destino.plan_curricular_id, elemento, actor_id=actor_id, audit_meta=audit_meta
     )
 
 
@@ -200,14 +243,14 @@ def _get_semestre(db: Session, semestre_id: int) -> Semestre:
 
 def _validar_y_confirmar(
     db: Session,
-    carrera_id: int,
+    plan_id: int,
     elemento: SemestreElemento,
     *,
     actor_id: int | None = None,
     audit_meta: dict | None = None,
 ) -> tuple[SemestreElemento, list[dict]]:
     db.flush()
-    ctx = build_context(db, carrera_id, operacion="elemento")
+    ctx = build_context(db, plan_id, operacion="elemento")
     violaciones = _motor.evaluate(ctx, scope=RuleScope.SEMESTRE)
     errores = [v for v in violaciones if v.severity == Severity.ERROR]
     if errores:
@@ -222,7 +265,8 @@ def _validar_y_confirmar(
             usuario_id=actor_id,
             entidad="semestre_elemento",
             entidad_id=elemento.id,
-            carrera_id=carrera_id,
+            carrera_id=ctx.plan.carrera_id,
+            plan_curricular_id=plan_id,
             **audit_meta,
         )
     db.commit()

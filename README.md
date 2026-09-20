@@ -128,8 +128,12 @@ Antes de usarlo en un entorno real:
 
 ## Roles
 
-- **USUARIO**: consulta de lectura de su propia carrera.
-- **DIRECTOR**: administra el mapa curricular y el catálogo de optativas de su carrera.
+- **USUARIO**: consulta de lectura de las carreras que tenga asignadas.
+- **DIRECTOR**: administra los planes curriculares de sus carreras asignadas.
 - **ADMIN**: administra todas las carreras y usuarios.
+
+Una carrera es una identidad permanente y puede tener varios planes curriculares
+independientes (`HISTORICO`, `VIGENTE` o `BORRADOR`). Las asignaciones de usuarios
+a carreras se consultan en la base en cada petición; no se incluyen en el JWT.
 
 <!-- write-access verification -->

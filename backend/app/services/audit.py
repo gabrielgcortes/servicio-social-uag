@@ -21,6 +21,7 @@ def registrar(
     entidad: str,
     entidad_id: int,
     carrera_id: int | None = None,
+    plan_curricular_id: int | None = None,
     datos_antes: dict | None = None,
     datos_despues: dict | None = None,
 ) -> None:
@@ -32,6 +33,7 @@ def registrar(
                 entidad=entidad,
                 entidad_id=entidad_id,
                 carrera_id=carrera_id,
+                plan_curricular_id=plan_curricular_id,
                 datos_antes=datos_antes,
                 datos_despues=datos_despues,
             )

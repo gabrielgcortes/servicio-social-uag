@@ -1,4 +1,4 @@
-"""Schema agregado del mapa curricular completo de una carrera: una sola
+"""Schema agregado del mapa curricular completo de un plan: una sola
 respuesta con semestres, elementos (con materia embebida), totales por
 semestre y las violaciones vigentes."""
 from __future__ import annotations
@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from app.schemas.carrera import CarreraRead
 from app.schemas.elemento import ElementoRead
+from app.schemas.plan_curricular import PlanCurricularRead
 
 
 class SemestreTotales(BaseModel):
@@ -25,5 +26,6 @@ class SemestreMapa(BaseModel):
 
 class MapaCurricular(BaseModel):
     carrera: CarreraRead
+    plan: PlanCurricularRead
     semestres: list[SemestreMapa]
     violations: list[dict] = Field(default_factory=list)

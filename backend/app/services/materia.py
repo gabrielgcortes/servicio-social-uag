@@ -18,10 +18,8 @@ from app.services import audit
 _motor = crear_motor()
 
 
-def list_materias(
-    db: Session, carrera_id: int, *, tipo: TipoMateria | None = None
-) -> list[Materia]:
-    return materia_repo.list_by_carrera(db, carrera_id, tipo=tipo)
+def list_materias(db: Session, plan_id: int, *, tipo: TipoMateria | None = None) -> list[Materia]:
+    return materia_repo.list_by_plan(db, plan_id, tipo=tipo)
 
 
 def get_materia(db: Session, materia_id: int) -> Materia:
@@ -32,13 +30,15 @@ def get_materia(db: Session, materia_id: int) -> Materia:
 
 
 def create_materia(
-    db: Session, carrera_id: int, payload: MateriaCreate, *, actor_id: int | None = None
+    db: Session, plan_id: int, payload: MateriaCreate, *, actor_id: int | None = None
 ) -> tuple[Materia, list[dict]]:
-    if materia_repo.get_by_carrera_clave(db, carrera_id, payload.clave) is not None:
-        raise ConflictError("Ya existe una materia con esa clave en esta carrera")
+    if materia_repo.get_by_plan_clave(db, plan_id, payload.clave) is not None:
+        raise ConflictError("Ya existe una materia con esa clave en este plan")
+
+    _validar_seriacion(db, plan_id, payload.seriacion_materia_id)
 
     materia = Materia(
-        carrera_id=carrera_id,
+        plan_curricular_id=plan_id,
         clave=payload.clave,
         nombre=payload.nombre,
         horas_docente=payload.horas_docente,
@@ -54,7 +54,7 @@ def create_materia(
         "accion": "materia_creada",
         "datos_despues": {"clave": materia.clave, "nombre": materia.nombre},
     }
-    return _validar_y_confirmar(db, carrera_id, materia, actor_id=actor_id, audit_meta=audit_meta)
+    return _validar_y_confirmar(db, plan_id, materia, actor_id=actor_id, audit_meta=audit_meta)
 
 
 def update_materia(
@@ -68,8 +68,8 @@ def update_materia(
     }
 
     if "clave" in campos and payload.clave != materia.clave:
-        if materia_repo.get_by_carrera_clave(db, materia.carrera_id, payload.clave) is not None:
-            raise ConflictError("Ya existe una materia con esa clave en esta carrera")
+        if materia_repo.get_by_plan_clave(db, materia.plan_curricular_id, payload.clave) is not None:
+            raise ConflictError("Ya existe una materia con esa clave en este plan")
         materia.clave = payload.clave
     if "nombre" in campos:
         materia.nombre = payload.nombre
@@ -84,6 +84,7 @@ def update_materia(
     if "tipo" in campos:
         materia.tipo = payload.tipo
     if "seriacion_materia_id" in campos:
+        _validar_seriacion(db, materia.plan_curricular_id, payload.seriacion_materia_id)
         materia.seriacion_materia_id = payload.seriacion_materia_id
     if "activa" in campos:
         materia.activa = payload.activa
@@ -97,7 +98,7 @@ def update_materia(
         },
     }
     return _validar_y_confirmar(
-        db, materia.carrera_id, materia, actor_id=actor_id, audit_meta=audit_meta
+        db, materia.plan_curricular_id, materia, actor_id=actor_id, audit_meta=audit_meta
     )
 
 
@@ -110,7 +111,8 @@ def delete_materia(db: Session, materia_id: int, *, actor_id: int | None = None)
         accion="materia_eliminada",
         entidad="materia",
         entidad_id=materia.id,
-        carrera_id=materia.carrera_id,
+        carrera_id=materia.plan_curricular.carrera_id,
+        plan_curricular_id=materia.plan_curricular_id,
         datos_antes={"clave": materia.clave, "nombre": materia.nombre},
     )
     db.commit()
@@ -118,14 +120,14 @@ def delete_materia(db: Session, materia_id: int, *, actor_id: int | None = None)
 
 def _validar_y_confirmar(
     db: Session,
-    carrera_id: int,
+    plan_id: int,
     materia: Materia,
     *,
     actor_id: int | None = None,
     audit_meta: dict | None = None,
 ) -> tuple[Materia, list[dict]]:
     db.flush()
-    ctx = build_context(db, carrera_id, operacion="materia")
+    ctx = build_context(db, plan_id, operacion="materia")
     violaciones = _motor.evaluate(ctx, scope=RuleScope.MATERIA)
     errores = [v for v in violaciones if v.severity == Severity.ERROR]
     if errores:
@@ -140,10 +142,21 @@ def _validar_y_confirmar(
             usuario_id=actor_id,
             entidad="materia",
             entidad_id=materia.id,
-            carrera_id=carrera_id,
+            carrera_id=materia.plan_curricular.carrera_id,
+            plan_curricular_id=plan_id,
             **audit_meta,
         )
     db.commit()
     db.refresh(materia)
     warnings = [v.to_dict() for v in violaciones if v.severity == Severity.WARNING]
     return materia, warnings
+
+
+def _validar_seriacion(db: Session, plan_id: int, seriacion_id: int | None) -> None:
+    if seriacion_id is None:
+        return
+    prerequisito = materia_repo.get_by_id(db, seriacion_id)
+    if prerequisito is None:
+        raise NotFoundError("Materia de seriación no encontrada")
+    if prerequisito.plan_curricular_id != plan_id:
+        raise BusinessRuleError("La seriación debe pertenecer al mismo plan curricular")

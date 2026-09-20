@@ -9,22 +9,16 @@ from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.models.carrera import Carrera
 from app.models.enums import RolUsuario
 from app.repositories import carrera as carrera_repo
-from app.rules.context import build_context
-from app.rules.registry import crear_motor
 from app.schemas.carrera import CarreraCreate, CarreraUpdate
 from app.services import audit
 
-_CAMPOS_SOLO_ADMIN = {"clave", "max_creditos_semestre", "activa"}
-_motor = crear_motor()
+_CAMPOS_SOLO_ADMIN = {"clave", "activa"}
 
 
 def list_carreras_for_principal(db: Session, principal: Principal) -> list[Carrera]:
     if principal.rol == RolUsuario.ADMIN:
         return carrera_repo.list_all(db)
-    if principal.carrera_id is None:
-        return []
-    carrera = carrera_repo.get_by_id(db, principal.carrera_id)
-    return [carrera] if carrera else []
+    return carrera_repo.list_for_usuario(db, principal.usuario_id)
 
 
 def get_carrera(db: Session, carrera_id: int) -> Carrera:
@@ -41,7 +35,6 @@ def create_carrera(db: Session, payload: CarreraCreate, *, actor_id: int | None 
         clave=payload.clave,
         nombre=payload.nombre,
         descripcion=payload.descripcion,
-        max_creditos_semestre=payload.max_creditos_semestre,
     )
     carrera_repo.add(db, carrera)
     audit.registrar(
@@ -70,14 +63,11 @@ def update_carrera(
     campos = payload.model_fields_set
 
     if not es_admin and campos & _CAMPOS_SOLO_ADMIN:
-        raise ForbiddenError(
-            "Solo ADMIN puede modificar clave, max_creditos_semestre o activa"
-        )
+        raise ForbiddenError("Solo ADMIN puede modificar clave o activa")
 
     datos_antes = {
         "clave": carrera.clave,
         "nombre": carrera.nombre,
-        "max_creditos_semestre": carrera.max_creditos_semestre,
     }
 
     if "clave" in campos and payload.clave != carrera.clave:
@@ -88,8 +78,6 @@ def update_carrera(
         carrera.nombre = payload.nombre
     if "descripcion" in campos:
         carrera.descripcion = payload.descripcion
-    if "max_creditos_semestre" in campos:
-        carrera.max_creditos_semestre = payload.max_creditos_semestre
     if "activa" in campos:
         carrera.activa = payload.activa
 
@@ -104,7 +92,6 @@ def update_carrera(
         datos_despues={
             "clave": carrera.clave,
             "nombre": carrera.nombre,
-            "max_creditos_semestre": carrera.max_creditos_semestre,
         },
     )
     db.commit()
@@ -126,11 +113,3 @@ def deactivate_carrera(db: Session, carrera_id: int, *, actor_id: int | None = N
     db.commit()
     db.refresh(carrera)
     return carrera
-
-
-def validar_carrera(db: Session, carrera_id: int) -> list[dict]:
-    """Corre todas las reglas sin mutar nada; útil para la UI antes de guardar."""
-    get_carrera(db, carrera_id)  # 404 si no existe
-    ctx = build_context(db, carrera_id, operacion="validar")
-    violaciones = _motor.evaluate(ctx)
-    return [v.to_dict() for v in violaciones]

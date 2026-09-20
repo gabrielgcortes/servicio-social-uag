@@ -10,9 +10,7 @@ from app.auth.principal import Principal
 from app.db.session import get_db
 from app.models.enums import RolUsuario
 from app.schemas.carrera import CarreraCreate, CarreraRead, CarreraUpdate
-from app.schemas.mapa import MapaCurricular
 from app.services import carrera as carrera_service
-from app.services import mapa as mapa_service
 
 router = APIRouter(prefix="/api/carreras", tags=["carreras"])
 _solo_admin = require_roles(RolUsuario.ADMIN)
@@ -42,7 +40,7 @@ def get_carrera(
     principal: Principal = Depends(get_current_principal),
     db: Session = Depends(get_db),
 ) -> CarreraRead:
-    policies.require_view_carrera(principal, carrera_id)
+    policies.require_view_carrera(db, principal, carrera_id)
     carrera = carrera_service.get_carrera(db, carrera_id)
     return CarreraRead.model_validate(carrera)
 
@@ -54,7 +52,7 @@ def update_carrera(
     principal: Principal = Depends(get_current_principal),
     db: Session = Depends(get_db),
 ) -> CarreraRead:
-    policies.require_edit_carrera(principal, carrera_id)
+    policies.require_edit_carrera(db, principal, carrera_id)
     carrera = carrera_service.update_carrera(
         db,
         carrera_id,
@@ -73,24 +71,3 @@ def deactivate_carrera(
 ) -> CarreraRead:
     carrera = carrera_service.deactivate_carrera(db, carrera_id, actor_id=principal.usuario_id)
     return CarreraRead.model_validate(carrera)
-
-
-@router.post("/{carrera_id}/validar", response_model=list[dict])
-def validar_carrera(
-    carrera_id: int,
-    principal: Principal = Depends(get_current_principal),
-    db: Session = Depends(get_db),
-) -> list[dict]:
-    policies.require_view_carrera(principal, carrera_id)
-    return carrera_service.validar_carrera(db, carrera_id)
-
-
-@router.get("/{carrera_id}/mapa", response_model=MapaCurricular)
-def get_mapa(
-    carrera_id: int,
-    principal: Principal = Depends(get_current_principal),
-    db: Session = Depends(get_db),
-) -> MapaCurricular:
-    policies.require_view_carrera(principal, carrera_id)
-    data = mapa_service.get_mapa(db, carrera_id)
-    return MapaCurricular.model_validate(data)

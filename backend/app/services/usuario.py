@@ -7,6 +7,7 @@ from app.core.exceptions import BusinessRuleError, ConflictError, NotFoundError
 from app.core.security import hash_password
 from app.models.enums import RolUsuario
 from app.models.usuario import Usuario
+from app.repositories import carrera as carrera_repo
 from app.repositories import usuario as usuario_repo
 from app.schemas.usuario import UsuarioCreate, UsuarioUpdate
 
@@ -32,13 +33,14 @@ def create_usuario(db: Session, payload: UsuarioCreate) -> Usuario:
     if usuario_repo.get_by_email(db, payload.email) is not None:
         raise ConflictError("Ya existe un usuario con ese email")
 
+    carreras = _resolver_carreras(db, payload.carrera_ids)
     user = Usuario(
         nombre=payload.nombre,
         email=payload.email,
         password_hash=hash_password(payload.password),
         rol=payload.rol,
-        carrera_id=payload.carrera_id,
         activo=payload.activo,
+        carreras=carreras,
     )
     usuario_repo.add(db, user)
     db.commit()
@@ -53,9 +55,13 @@ def update_usuario(
     campos_enviados = payload.model_fields_set
 
     nuevo_rol = payload.rol if "rol" in campos_enviados else user.rol
-    nueva_carrera = payload.carrera_id if "carrera_id" in campos_enviados else user.carrera_id
-    if nuevo_rol != RolUsuario.ADMIN and nueva_carrera is None:
-        raise BusinessRuleError("USUARIO y DIRECTOR deben tener una carrera asignada")
+    nuevas_carreras = (
+        _resolver_carreras(db, payload.carrera_ids or [])
+        if "carrera_ids" in campos_enviados
+        else user.carreras
+    )
+    if nuevo_rol != RolUsuario.ADMIN and not nuevas_carreras:
+        raise BusinessRuleError("USUARIO y DIRECTOR deben tener al menos una carrera asignada")
 
     if payload.activo is False and usuario_id == actor_id:
         raise BusinessRuleError("Un administrador no puede desactivarse a sí mismo")
@@ -64,14 +70,26 @@ def update_usuario(
         user.nombre = payload.nombre
     if "rol" in campos_enviados:
         user.rol = payload.rol
-    if "carrera_id" in campos_enviados:
-        user.carrera_id = payload.carrera_id
+    if "carrera_ids" in campos_enviados:
+        user.carreras = nuevas_carreras
     if "activo" in campos_enviados:
         user.activo = payload.activo
 
     db.commit()
     db.refresh(user)
     return user
+
+
+def _resolver_carreras(db: Session, carrera_ids: list[int]) -> list:
+    if len(carrera_ids) != len(set(carrera_ids)):
+        raise BusinessRuleError("No se puede asignar una carrera más de una vez")
+    carreras = []
+    for carrera_id in carrera_ids:
+        carrera = carrera_repo.get_by_id(db, carrera_id)
+        if carrera is None:
+            raise NotFoundError(f"Carrera {carrera_id} no encontrada")
+        carreras.append(carrera)
+    return carreras
 
 
 def deactivate_usuario(db: Session, usuario_id: int, *, actor_id: int) -> Usuario:

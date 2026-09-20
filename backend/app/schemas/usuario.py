@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.models.enums import RolUsuario
 
@@ -12,7 +12,7 @@ class UsuarioBase(BaseModel):
     nombre: str
     email: EmailStr
     rol: RolUsuario
-    carrera_id: int | None = None
+    carrera_ids: list[int] = Field(default_factory=list)
     activo: bool = True
 
 
@@ -34,15 +34,17 @@ class UsuarioCreate(UsuarioBase):
 
     @model_validator(mode="after")
     def rol_requiere_carrera(self) -> "UsuarioCreate":
-        if self.rol != RolUsuario.ADMIN and self.carrera_id is None:
-            raise ValueError("USUARIO y DIRECTOR deben tener una carrera asignada")
+        if self.rol != RolUsuario.ADMIN and not self.carrera_ids:
+            raise ValueError("USUARIO y DIRECTOR deben tener al menos una carrera asignada")
+        if len(self.carrera_ids) != len(set(self.carrera_ids)):
+            raise ValueError("No se puede asignar una carrera más de una vez")
         return self
 
 
 class UsuarioUpdate(BaseModel):
     nombre: str | None = None
     rol: RolUsuario | None = None
-    carrera_id: int | None = None
+    carrera_ids: list[int] | None = None
     activo: bool | None = None
 
 

@@ -38,9 +38,9 @@ def _crear_workbook() -> Workbook:
     return wb
 
 
-def exportar_carrera(db: Session, carrera_id: int) -> BytesIO:
-    mapa = mapa_service.get_mapa(db, carrera_id)
-    optativas = materia_repo.list_by_carrera(db, carrera_id, tipo=TipoMateria.OPTATIVA)
+def exportar_carrera(db: Session, plan_id: int) -> BytesIO:
+    mapa = mapa_service.get_mapa(db, plan_id)
+    optativas = materia_repo.list_by_plan(db, plan_id, tipo=TipoMateria.OPTATIVA)
 
     wb = _crear_workbook()
     escribir_mapa(wb[HOJA_MAPA], mapa)

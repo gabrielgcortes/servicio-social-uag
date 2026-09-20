@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, Computed, ForeignKey, Index, Integer, Numeric, String, text
+from sqlalchemy import BigInteger, CheckConstraint, Computed, ForeignKey, Index, Integer, Numeric, String, text
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -45,9 +45,9 @@ class SemestreElemento(Base, TimestampMixin):
         ),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     semestre_id: Mapped[int] = mapped_column(
-        ForeignKey("semestre.id", ondelete="CASCADE"), nullable=False
+        BigInteger, ForeignKey("semestre.id", ondelete="CASCADE"), nullable=False
     )
     tipo: Mapped[TipoElemento] = mapped_column(
         SAEnum(TipoElemento, name="tipo_elemento", native_enum=True), nullable=False
@@ -55,7 +55,7 @@ class SemestreElemento(Base, TimestampMixin):
     orden: Mapped[int] = mapped_column(Integer, nullable=False)
 
     materia_id: Mapped[int | None] = mapped_column(
-        ForeignKey("materia.id", ondelete="CASCADE"), nullable=True
+        BigInteger, ForeignKey("materia.id", ondelete="CASCADE"), nullable=True
     )
     nombre: Mapped[str | None] = mapped_column(String(250), nullable=True)
     horas_docente: Mapped[int | None] = mapped_column(Integer, nullable=True)

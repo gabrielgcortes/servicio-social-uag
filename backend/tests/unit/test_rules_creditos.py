@@ -6,6 +6,7 @@ from decimal import Decimal
 from app.models.carrera import Carrera
 from app.models.enums import TipoElemento, TipoMateria
 from app.models.materia import Materia
+from app.models.plan_curricular import PlanCurricular
 from app.models.semestre import Semestre
 from app.models.semestre_elemento import SemestreElemento
 from app.rules.base import RuleContext, Severity
@@ -15,7 +16,7 @@ from app.rules.creditos import MaxCreditosSemestreRule
 def _materia(id_, horas_docente, horas_independientes, creditos):
     m = Materia(
         id=id_,
-        carrera_id=1,
+        plan_curricular_id=1,
         clave=f"M{id_}",
         nombre=f"Materia {id_}",
         horas_docente=horas_docente,
@@ -27,8 +28,9 @@ def _materia(id_, horas_docente, horas_independientes, creditos):
 
 
 def test_max_creditos_semestre_detecta_exceso():
-    carrera = Carrera(id=1, clave="LSW", nombre="Ing. Software", max_creditos_semestre=50)
-    semestre = Semestre(id=1, carrera_id=1, numero=1)
+    carrera = Carrera(id=1, clave="LSW", nombre="Ing. Software")
+    plan = PlanCurricular(id=1, carrera_id=1, clave="LSW-2025", max_creditos_semestre=50)
+    semestre = Semestre(id=1, plan_curricular_id=1, numero=1)
     # 6 materias de 9 créditos = 54 > 50
     materias = {i: _materia(i, 64, 80, "9.00") for i in range(1, 7)}
     elementos = [
@@ -38,6 +40,7 @@ def test_max_creditos_semestre_detecta_exceso():
 
     ctx = RuleContext(
         carrera=carrera,
+        plan=plan,
         semestres=[semestre],
         elementos_por_semestre={1: elementos},
         materias_por_id=materias,
@@ -51,14 +54,16 @@ def test_max_creditos_semestre_detecta_exceso():
 
 
 def test_max_creditos_semestre_no_excede():
-    carrera = Carrera(id=1, clave="LSW", nombre="Ing. Software", max_creditos_semestre=50)
-    semestre = Semestre(id=1, carrera_id=1, numero=1)
+    carrera = Carrera(id=1, clave="LSW", nombre="Ing. Software")
+    plan = PlanCurricular(id=1, carrera_id=1, clave="LSW-2025", max_creditos_semestre=50)
+    semestre = Semestre(id=1, plan_curricular_id=1, numero=1)
     materia = _materia(1, 48, 48, "6.00")
     elementos = [
         SemestreElemento(id=1, semestre_id=1, tipo=TipoElemento.MATERIA, materia_id=1, orden=0)
     ]
     ctx = RuleContext(
         carrera=carrera,
+        plan=plan,
         semestres=[semestre],
         elementos_por_semestre={1: elementos},
         materias_por_id={1: materia},

@@ -24,12 +24,10 @@ def verify_password(password: str, password_hash: str) -> bool:
     return _password_hasher.verify(password, password_hash)
 
 
-def create_access_token(*, subject: int, rol: str, carrera_id: int | None) -> str:
+def create_access_token(*, subject: int) -> str:
     now = datetime.now(timezone.utc)
     payload: dict[str, Any] = {
         "sub": str(subject),
-        "rol": rol,
-        "carrera_id": carrera_id,
         "iat": now,
         "exp": now + timedelta(minutes=settings.access_token_minutes),
         "jti": str(uuid.uuid4()),

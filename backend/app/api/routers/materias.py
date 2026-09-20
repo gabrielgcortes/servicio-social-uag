@@ -20,32 +20,32 @@ from app.services import materia as materia_service
 router = APIRouter(tags=["materias"])
 
 
-@router.get("/api/carreras/{carrera_id}/materias", response_model=list[MateriaRead])
+@router.get("/api/planes/{plan_id}/materias", response_model=list[MateriaRead])
 def list_materias(
-    carrera_id: int,
+    plan_id: int,
     tipo: TipoMateria | None = Query(default=None),
     principal: Principal = Depends(get_current_principal),
     db: Session = Depends(get_db),
 ) -> list[MateriaRead]:
-    policies.require_view_carrera(principal, carrera_id)
-    materias = materia_service.list_materias(db, carrera_id, tipo=tipo)
+    policies.require_view_plan(db, principal, plan_id)
+    materias = materia_service.list_materias(db, plan_id, tipo=tipo)
     return [MateriaRead.model_validate(m) for m in materias]
 
 
 @router.post(
-    "/api/carreras/{carrera_id}/materias",
+    "/api/planes/{plan_id}/materias",
     response_model=MateriaMutationResponse,
     status_code=201,
 )
 def create_materia(
-    carrera_id: int,
+    plan_id: int,
     payload: MateriaCreate,
     principal: Principal = Depends(get_current_principal),
     db: Session = Depends(get_db),
 ) -> MateriaMutationResponse:
-    policies.require_edit_carrera(principal, carrera_id)
+    policies.require_edit_plan(db, principal, plan_id)
     materia, warnings = materia_service.create_materia(
-        db, carrera_id, payload, actor_id=principal.usuario_id
+        db, plan_id, payload, actor_id=principal.usuario_id
     )
     return MateriaMutationResponse(materia=MateriaRead.model_validate(materia), warnings=warnings)
 
@@ -56,8 +56,8 @@ def get_materia(
     principal: Principal = Depends(get_current_principal),
     db: Session = Depends(get_db),
 ) -> MateriaRead:
-    carrera_id = policies.resolve_carrera_from_materia(db, materia_id)
-    policies.require_view_carrera(principal, carrera_id)
+    plan_id = policies.resolve_plan_from_materia(db, materia_id)
+    policies.require_view_plan(db, principal, plan_id)
     materia = materia_service.get_materia(db, materia_id)
     return MateriaRead.model_validate(materia)
 
@@ -69,8 +69,8 @@ def update_materia(
     principal: Principal = Depends(get_current_principal),
     db: Session = Depends(get_db),
 ) -> MateriaMutationResponse:
-    carrera_id = policies.resolve_carrera_from_materia(db, materia_id)
-    policies.require_edit_carrera(principal, carrera_id)
+    plan_id = policies.resolve_plan_from_materia(db, materia_id)
+    policies.require_edit_plan(db, principal, plan_id)
     materia, warnings = materia_service.update_materia(
         db, materia_id, payload, actor_id=principal.usuario_id
     )
@@ -83,8 +83,8 @@ def delete_materia(
     principal: Principal = Depends(get_current_principal),
     db: Session = Depends(get_db),
 ) -> None:
-    carrera_id = policies.resolve_carrera_from_materia(db, materia_id)
-    policies.require_edit_carrera(principal, carrera_id)
+    plan_id = policies.resolve_plan_from_materia(db, materia_id)
+    policies.require_edit_plan(db, principal, plan_id)
     materia_service.delete_materia(db, materia_id, actor_id=principal.usuario_id)
 
 
@@ -93,31 +93,31 @@ def delete_materia(
 # de optativas" — ver decisión arquitectónica #4 del plan).
 
 
-@router.get("/api/carreras/{carrera_id}/optativas", response_model=list[MateriaRead])
+@router.get("/api/planes/{plan_id}/optativas", response_model=list[MateriaRead])
 def list_optativas(
-    carrera_id: int,
+    plan_id: int,
     principal: Principal = Depends(get_current_principal),
     db: Session = Depends(get_db),
 ) -> list[MateriaRead]:
-    policies.require_view_carrera(principal, carrera_id)
-    materias = materia_service.list_materias(db, carrera_id, tipo=TipoMateria.OPTATIVA)
+    policies.require_view_plan(db, principal, plan_id)
+    materias = materia_service.list_materias(db, plan_id, tipo=TipoMateria.OPTATIVA)
     return [MateriaRead.model_validate(m) for m in materias]
 
 
 @router.post(
-    "/api/carreras/{carrera_id}/optativas",
+    "/api/planes/{plan_id}/optativas",
     response_model=MateriaMutationResponse,
     status_code=201,
 )
 def create_optativa(
-    carrera_id: int,
+    plan_id: int,
     payload: MateriaCreate,
     principal: Principal = Depends(get_current_principal),
     db: Session = Depends(get_db),
 ) -> MateriaMutationResponse:
-    policies.require_edit_carrera(principal, carrera_id)
+    policies.require_edit_plan(db, principal, plan_id)
     payload_optativa = payload.model_copy(update={"tipo": TipoMateria.OPTATIVA})
     materia, warnings = materia_service.create_materia(
-        db, carrera_id, payload_optativa, actor_id=principal.usuario_id
+        db, plan_id, payload_optativa, actor_id=principal.usuario_id
     )
     return MateriaMutationResponse(materia=MateriaRead.model_validate(materia), warnings=warnings)

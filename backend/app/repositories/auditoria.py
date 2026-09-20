@@ -13,6 +13,8 @@ def list_auditoria(
     db: Session,
     *,
     carrera_id: int | None = None,
+    carrera_ids: list[int] | None = None,
+    plan_curricular_id: int | None = None,
     entidad: str | None = None,
     desde: datetime | None = None,
     hasta: datetime | None = None,
@@ -21,6 +23,10 @@ def list_auditoria(
     stmt = select(Auditoria)
     if carrera_id is not None:
         stmt = stmt.where(Auditoria.carrera_id == carrera_id)
+    if carrera_ids is not None:
+        stmt = stmt.where(Auditoria.carrera_id.in_(carrera_ids))
+    if plan_curricular_id is not None:
+        stmt = stmt.where(Auditoria.plan_curricular_id == plan_curricular_id)
     if entidad is not None:
         stmt = stmt.where(Auditoria.entidad == entidad)
     if desde is not None:

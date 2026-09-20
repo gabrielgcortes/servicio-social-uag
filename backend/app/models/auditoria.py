@@ -18,18 +18,22 @@ class Auditoria(Base):
     __tablename__ = "auditoria"
     __table_args__ = (
         Index("ix_auditoria_carrera_created", "carrera_id", "created_at"),
+        Index("ix_auditoria_plan_created", "plan_curricular_id", "created_at"),
         Index("ix_auditoria_entidad", "entidad", "entidad_id"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     usuario_id: Mapped[int | None] = mapped_column(
-        ForeignKey("usuario.id", ondelete="SET NULL"), nullable=True
+        BigInteger, ForeignKey("usuario.id", ondelete="SET NULL"), nullable=True
     )
     accion: Mapped[str] = mapped_column(String(60), nullable=False)
     entidad: Mapped[str] = mapped_column(String(60), nullable=False)
     entidad_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     carrera_id: Mapped[int | None] = mapped_column(
-        ForeignKey("carrera.id", ondelete="SET NULL"), nullable=True
+        BigInteger, ForeignKey("carrera.id", ondelete="SET NULL"), nullable=True
+    )
+    plan_curricular_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("plan_curricular.id", ondelete="SET NULL"), nullable=True
     )
     datos_antes: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     datos_despues: Mapped[dict | None] = mapped_column(JSONB, nullable=True)

@@ -11,8 +11,9 @@ from app.core.config import get_settings
 from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.models.carrera import Carrera
-from app.models.enums import RolUsuario, TipoElemento, TipoMateria
+from app.models.enums import EstadoPlanCurricular, RolUsuario, TipoElemento, TipoMateria
 from app.models.materia import Materia
+from app.models.plan_curricular import PlanCurricular
 from app.models.semestre import Semestre
 from app.models.semestre_elemento import SemestreElemento
 from app.models.usuario import Usuario
@@ -41,7 +42,6 @@ def _seed_admin(db: Session) -> None:
             email=settings.seed_admin_email,
             password_hash=hash_password(settings.seed_admin_password),
             rol=RolUsuario.ADMIN,
-            carrera_id=None,
             activo=True,
         )
     )
@@ -51,17 +51,28 @@ def _seed_carrera_lsw(db: Session) -> None:
     if db.query(Carrera).filter_by(clave="LSW").one_or_none():
         return
 
-    carrera = Carrera(clave="LSW", nombre="Ingeniería de Software", max_creditos_semestre=50)
+    carrera = Carrera(clave="LSW", nombre="Ingeniería de Software")
     db.add(carrera)
     db.flush()
 
-    semestres = {n: Semestre(carrera_id=carrera.id, numero=n) for n in range(1, 9)}
+    plan = PlanCurricular(
+        carrera_id=carrera.id,
+        clave="LSW-2025",
+        descripcion="Plan curricular de ejemplo",
+        anio_inicio=2025,
+        estado=EstadoPlanCurricular.VIGENTE,
+        max_creditos_semestre=50,
+    )
+    db.add(plan)
+    db.flush()
+
+    semestres = {n: Semestre(plan_curricular_id=plan.id, numero=n) for n in range(1, 9)}
     db.add_all(semestres.values())
     db.flush()
 
     # Catálogo de optativas — incluye la seriación LSW058 -> LSW059 del enunciado.
     redes_iii = Materia(
-        carrera_id=carrera.id,
+        plan_curricular_id=plan.id,
         clave="LSW058",
         nombre="Redes III",
         horas_docente=48,
@@ -74,7 +85,7 @@ def _seed_carrera_lsw(db: Session) -> None:
     db.add_all(
         [
             Materia(
-                carrera_id=carrera.id,
+                plan_curricular_id=plan.id,
                 clave="LSW059",
                 nombre="Redes IV",
                 horas_docente=48,
@@ -83,7 +94,7 @@ def _seed_carrera_lsw(db: Session) -> None:
                 seriacion_materia_id=redes_iii.id,
             ),
             Materia(
-                carrera_id=carrera.id,
+                plan_curricular_id=plan.id,
                 clave="LSW054",
                 nombre="Aprendizaje máquina",
                 horas_docente=48,
@@ -105,7 +116,7 @@ def _seed_carrera_lsw(db: Session) -> None:
     orden_por_semestre: dict[int, int] = {}
     for numero, clave, nombre, horas_docente, horas_independientes in obligatorias:
         materia = Materia(
-            carrera_id=carrera.id,
+            plan_curricular_id=plan.id,
             clave=clave,
             nombre=nombre,
             horas_docente=horas_docente,

@@ -77,7 +77,7 @@ def change_password(
 
 
 def _issue_access_token(user: Usuario) -> str:
-    return create_access_token(subject=user.id, rol=user.rol.value, carrera_id=user.carrera_id)
+    return create_access_token(subject=user.id)
 
 
 def _issue_refresh_token(db: Session, usuario_id: int) -> str:

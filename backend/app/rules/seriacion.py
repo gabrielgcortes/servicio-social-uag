@@ -1,12 +1,12 @@
-"""Reglas de seriación: misma carrera, sin ciclos, en un semestre anterior."""
+"""Reglas de seriación: mismo plan, sin ciclos y en un semestre anterior."""
 from __future__ import annotations
 
 from app.models.enums import TipoElemento
 from app.rules.base import RuleContext, RuleScope, RuleViolation, Severity
 
 
-class SeriacionMismaCarreraRule:
-    code = "SERIACION_MISMA_CARRERA"
+class SeriacionMismoPlanRule:
+    code = "SERIACION_MISMO_PLAN"
     scope = RuleScope.MATERIA
 
     def evaluate(self, ctx: RuleContext) -> list[RuleViolation]:
@@ -19,7 +19,7 @@ class SeriacionMismaCarreraRule:
                     RuleViolation(
                         code=self.code,
                         severity=Severity.ERROR,
-                        message=f"El prerrequisito de {materia.clave} no pertenece a esta carrera",
+                        message=f"El prerrequisito de {materia.clave} no pertenece a este plan",
                         context={"materia_id": materia.id, "clave": materia.clave},
                     )
                 )

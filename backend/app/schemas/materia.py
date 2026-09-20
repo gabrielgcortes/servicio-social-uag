@@ -41,7 +41,7 @@ class MateriaRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    carrera_id: int
+    plan_curricular_id: int
     clave: str
     nombre: str
     horas_docente: int

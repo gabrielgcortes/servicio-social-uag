@@ -7,7 +7,7 @@ from app.rules.creditos import CreditosEnterosRule, HorasValidasRule, MaxCredito
 from app.rules.engine import RuleEngine
 from app.rules.seriacion import (
     SeriacionCicloRule,
-    SeriacionMismaCarreraRule,
+    SeriacionMismoPlanRule,
     SeriacionOrdenSemestreRule,
 )
 
@@ -15,7 +15,7 @@ REGLAS_ACTIVAS: list[Rule] = [
     MaxCreditosSemestreRule(),
     CreditosEnterosRule(),
     HorasValidasRule(),
-    SeriacionMismaCarreraRule(),
+    SeriacionMismoPlanRule(),
     SeriacionCicloRule(),
     SeriacionOrdenSemestreRule(),
 ]

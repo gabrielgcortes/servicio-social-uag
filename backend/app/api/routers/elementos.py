@@ -30,8 +30,8 @@ def list_elementos(
     principal: Principal = Depends(get_current_principal),
     db: Session = Depends(get_db),
 ) -> list[ElementoRead]:
-    carrera_id = policies.resolve_carrera_from_semestre(db, semestre_id)
-    policies.require_view_carrera(principal, carrera_id)
+    plan_id = policies.resolve_plan_from_semestre(db, semestre_id)
+    policies.require_view_plan(db, principal, plan_id)
     elementos = elemento_service.list_elementos(db, semestre_id)
     return [ElementoRead.model_validate(e) for e in elementos]
 
@@ -47,14 +47,18 @@ def create_elemento(
     principal: Principal = Depends(get_current_principal),
     db: Session = Depends(get_db),
 ) -> ElementoMutationResponse:
-    carrera_id = policies.resolve_carrera_from_semestre(db, semestre_id)
-    policies.require_edit_carrera(principal, carrera_id)
+    plan_id = policies.resolve_plan_from_semestre(db, semestre_id)
+    policies.require_edit_plan(db, principal, plan_id)
 
     if isinstance(payload, ElementoMateriaCreate):
-        elemento, warnings = elemento_service.crear_elemento_materia(db, semestre_id, payload)
+        elemento, warnings = elemento_service.crear_elemento_materia(
+            db, semestre_id, payload, actor_id=principal.usuario_id
+        )
     else:
         assert isinstance(payload, ElementoEspacioOptativoCreate)
-        elemento, warnings = elemento_service.crear_espacio_optativo(db, semestre_id, payload)
+        elemento, warnings = elemento_service.crear_espacio_optativo(
+            db, semestre_id, payload, actor_id=principal.usuario_id
+        )
 
     return ElementoMutationResponse(
         elemento=ElementoRead.model_validate(elemento), warnings=warnings
@@ -68,9 +72,11 @@ def update_elemento(
     principal: Principal = Depends(get_current_principal),
     db: Session = Depends(get_db),
 ) -> ElementoMutationResponse:
-    carrera_id = policies.resolve_carrera_from_elemento(db, elemento_id)
-    policies.require_edit_carrera(principal, carrera_id)
-    elemento, warnings = elemento_service.actualizar_espacio_optativo(db, elemento_id, payload)
+    plan_id = policies.resolve_plan_from_elemento(db, elemento_id)
+    policies.require_edit_plan(db, principal, plan_id)
+    elemento, warnings = elemento_service.actualizar_espacio_optativo(
+        db, elemento_id, payload, actor_id=principal.usuario_id
+    )
     return ElementoMutationResponse(
         elemento=ElementoRead.model_validate(elemento), warnings=warnings
     )
@@ -82,8 +88,8 @@ def delete_elemento(
     principal: Principal = Depends(get_current_principal),
     db: Session = Depends(get_db),
 ) -> None:
-    carrera_id = policies.resolve_carrera_from_elemento(db, elemento_id)
-    policies.require_edit_carrera(principal, carrera_id)
+    plan_id = policies.resolve_plan_from_elemento(db, elemento_id)
+    policies.require_edit_plan(db, principal, plan_id)
     elemento_service.eliminar_elemento(db, elemento_id, actor_id=principal.usuario_id)
 
 
@@ -94,9 +100,11 @@ def reordenar_elementos(
     principal: Principal = Depends(get_current_principal),
     db: Session = Depends(get_db),
 ) -> list[ElementoRead]:
-    carrera_id = policies.resolve_carrera_from_semestre(db, semestre_id)
-    policies.require_edit_carrera(principal, carrera_id)
-    elementos = elemento_service.reordenar(db, semestre_id, payload.elemento_ids)
+    plan_id = policies.resolve_plan_from_semestre(db, semestre_id)
+    policies.require_edit_plan(db, principal, plan_id)
+    elementos = elemento_service.reordenar(
+        db, semestre_id, payload.elemento_ids, actor_id=principal.usuario_id
+    )
     return [ElementoRead.model_validate(e) for e in elementos]
 
 
@@ -107,10 +115,10 @@ def mover_elemento(
     principal: Principal = Depends(get_current_principal),
     db: Session = Depends(get_db),
 ) -> ElementoMutationResponse:
-    carrera_id_origen = policies.resolve_carrera_from_elemento(db, elemento_id)
-    carrera_id_destino = policies.resolve_carrera_from_semestre(db, payload.semestre_destino_id)
-    policies.require_edit_carrera(principal, carrera_id_origen)
-    policies.require_edit_carrera(principal, carrera_id_destino)
+    plan_id_origen = policies.resolve_plan_from_elemento(db, elemento_id)
+    plan_id_destino = policies.resolve_plan_from_semestre(db, payload.semestre_destino_id)
+    policies.require_edit_plan(db, principal, plan_id_origen)
+    policies.require_edit_plan(db, principal, plan_id_destino)
 
     elemento, warnings = elemento_service.mover_elemento(
         db, elemento_id, payload.semestre_destino_id, payload.posicion, actor_id=principal.usuario_id

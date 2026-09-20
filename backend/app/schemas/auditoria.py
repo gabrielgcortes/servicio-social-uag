@@ -15,6 +15,7 @@ class AuditoriaRead(BaseModel):
     entidad: str
     entidad_id: int
     carrera_id: int | None
+    plan_curricular_id: int | None
     datos_antes: dict | None
     datos_despues: dict | None
     created_at: datetime

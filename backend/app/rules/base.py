@@ -8,6 +8,7 @@ from typing import Protocol
 
 from app.models.carrera import Carrera
 from app.models.materia import Materia
+from app.models.plan_curricular import PlanCurricular
 from app.models.semestre import Semestre
 from app.models.semestre_elemento import SemestreElemento
 
@@ -41,10 +42,11 @@ class RuleViolation:
 
 @dataclass
 class RuleContext:
-    """Snapshot en memoria de una carrera, ya cargado por rules/context.py
+    """Snapshot en memoria de un plan, ya cargado por rules/context.py
     antes de mutar/persistir nada, para que las reglas nunca golpeen la DB."""
 
     carrera: Carrera
+    plan: PlanCurricular
     semestres: list[Semestre]
     elementos_por_semestre: dict[int, list[SemestreElemento]]
     materias_por_id: dict[int, Materia]

@@ -11,7 +11,7 @@ class SemestreCreate(BaseModel):
         default=None,
         ge=1,
         le=20,
-        description="Si se omite, se asigna el siguiente número libre de la carrera",
+        description="Si se omite, se asigna el siguiente número libre del plan",
     )
 
 
@@ -19,7 +19,7 @@ class SemestreRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    carrera_id: int
+    plan_curricular_id: int
     numero: int
     created_at: datetime
     updated_at: datetime

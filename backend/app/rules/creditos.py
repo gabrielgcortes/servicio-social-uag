@@ -14,7 +14,7 @@ class MaxCreditosSemestreRule:
 
     def evaluate(self, ctx: RuleContext) -> list[RuleViolation]:
         violaciones: list[RuleViolation] = []
-        maximo = ctx.carrera.max_creditos_semestre
+        maximo = ctx.plan.max_creditos_semestre
         for semestre in ctx.semestres:
             elementos = ctx.elementos_por_semestre.get(semestre.id, [])
             total = self._total_creditos(elementos, ctx)

@@ -35,9 +35,7 @@ def get_current_principal(
     if user is None or not user.activo:
         raise UnauthorizedError("Usuario inválido o inactivo")
 
-    return Principal(
-        usuario_id=user.id, rol=user.rol, carrera_id=user.carrera_id, activo=user.activo
-    )
+    return Principal(usuario_id=user.id, rol=user.rol, activo=user.activo)
 
 
 def require_roles(*roles: RolUsuario):

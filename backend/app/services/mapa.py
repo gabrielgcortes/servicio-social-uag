@@ -1,5 +1,5 @@
-"""Construye la vista agregada del mapa curricular completo de una carrera:
-carrera + semestres + elementos (con materia embebida) + totales + violaciones.
+"""Construye la vista agregada de un plan curricular:
+carrera + plan + semestres + elementos + totales + violaciones.
 Reutiliza rules.context.build_context para no duplicar queries."""
 from __future__ import annotations
 
@@ -7,19 +7,19 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import NotFoundError
 from app.models.enums import TipoElemento
-from app.repositories import carrera as carrera_repo
+from app.repositories import plan_curricular as plan_repo
 from app.rules.context import build_context
 from app.rules.registry import crear_motor
 
 _motor = crear_motor()
 
 
-def get_mapa(db: Session, carrera_id: int) -> dict:
-    carrera = carrera_repo.get_by_id(db, carrera_id)
-    if carrera is None:
-        raise NotFoundError("Carrera no encontrada")
+def get_mapa(db: Session, plan_id: int) -> dict:
+    plan = plan_repo.get_by_id(db, plan_id)
+    if plan is None:
+        raise NotFoundError("Plan curricular no encontrado")
 
-    ctx = build_context(db, carrera_id, operacion="mapa")
+    ctx = build_context(db, plan_id, operacion="mapa")
     violaciones = _motor.evaluate(ctx)
 
     semestres_payload = []
@@ -55,7 +55,8 @@ def get_mapa(db: Session, carrera_id: int) -> dict:
         )
 
     return {
-        "carrera": carrera,
+        "carrera": ctx.carrera,
+        "plan": plan,
         "semestres": semestres_payload,
         "violations": [v.to_dict() for v in violaciones],
     }

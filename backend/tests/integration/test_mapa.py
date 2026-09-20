@@ -6,6 +6,7 @@ from app.core.exceptions import BusinessRuleError
 from app.models.carrera import Carrera
 from app.models.enums import TipoMateria
 from app.models.materia import Materia
+from app.models.plan_curricular import PlanCurricular
 from app.models.semestre import Semestre
 from app.models.semestre_elemento import SemestreElemento
 from app.schemas.elemento import ElementoMateriaCreate
@@ -13,11 +14,14 @@ from app.services import elemento as elemento_service
 
 
 def test_columna_generada_de_creditos(db_session):
-    carrera = Carrera(clave="FFF", nombre="Carrera F", max_creditos_semestre=50)
+    carrera = Carrera(clave="FFF", nombre="Carrera F")
     db_session.add(carrera)
     db_session.flush()
+    plan = PlanCurricular(carrera_id=carrera.id, clave="FFF-2025", max_creditos_semestre=50)
+    db_session.add(plan)
+    db_session.flush()
     materia = Materia(
-        carrera_id=carrera.id,
+        plan_curricular_id=plan.id,
         clave="F001",
         nombre="Materia F",
         horas_docente=48,
@@ -31,15 +35,18 @@ def test_columna_generada_de_creditos(db_session):
 
 
 def test_max_creditos_semestre_hace_rollback(db_session):
-    carrera = Carrera(clave="GGG", nombre="Carrera G", max_creditos_semestre=10)
+    carrera = Carrera(clave="GGG", nombre="Carrera G")
     db_session.add(carrera)
     db_session.flush()
-    semestre = Semestre(carrera_id=carrera.id, numero=1)
+    plan = PlanCurricular(carrera_id=carrera.id, clave="GGG-2025", max_creditos_semestre=10)
+    db_session.add(plan)
+    db_session.flush()
+    semestre = Semestre(plan_curricular_id=plan.id, numero=1)
     db_session.add(semestre)
     db_session.flush()
 
     materia1 = Materia(
-        carrera_id=carrera.id,
+        plan_curricular_id=plan.id,
         clave="G001",
         nombre="Materia G1",
         horas_docente=64,
@@ -47,7 +54,7 @@ def test_max_creditos_semestre_hace_rollback(db_session):
         tipo=TipoMateria.OBLIGATORIA,
     )
     materia2 = Materia(
-        carrera_id=carrera.id,
+        plan_curricular_id=plan.id,
         clave="G002",
         nombre="Materia G2",
         horas_docente=64,

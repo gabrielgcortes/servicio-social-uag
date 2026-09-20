@@ -18,6 +18,12 @@ class TipoElemento(str, enum.Enum):
     ESPACIO_OPTATIVO = "ESPACIO_OPTATIVO"
 
 
+class EstadoPlanCurricular(str, enum.Enum):
+    BORRADOR = "BORRADOR"
+    VIGENTE = "VIGENTE"
+    HISTORICO = "HISTORICO"
+
+
 class AuthProvider(str, enum.Enum):
     LOCAL = "LOCAL"
     SSO = "SSO"

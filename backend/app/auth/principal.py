@@ -12,5 +12,4 @@ from app.models.enums import RolUsuario
 class Principal:
     usuario_id: int
     rol: RolUsuario
-    carrera_id: int | None
     activo: bool
