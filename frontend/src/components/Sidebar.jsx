@@ -8,7 +8,8 @@ const navItems = [
   { id: 'exports', label: 'Exportaciones', icon: 'export' },
 ]
 
-export default function Sidebar({ currentPage, onNavigate, open, onClose }) {
+export default function
+  Sidebar({ currentPage, onNavigate, open, onClose }) {
   return (
     <>
       {open && <button aria-label="Cerrar menú" className="fixed inset-0 z-30 bg-slate-950/30 backdrop-blur-sm lg:hidden" onClick={onClose} />}
