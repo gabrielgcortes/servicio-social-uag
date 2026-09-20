@@ -20,7 +20,7 @@ export default function ProgramsPage({ programs, onOpen, onEdit, onCreate }) {
           <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Mis programas</h2>
           <p className="mt-2 max-w-2xl text-sm text-slate-500">Administra versiones, revisa el avance normativo y continúa trabajando en tus mapas curriculares.</p>
         </div>
-        <button type="button" onClick={onCreate} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#173b69] px-4 text-sm font-semibold text-white shadow-lg shadow-blue-900/15 transition hover:bg-[#214f87] focus:outline-none focus:ring-4 focus:ring-blue-200">
+        <button type="button" onClick={onCreate} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#A6192E] px-4 text-sm font-semibold text-white shadow-lg shadow-blue-900/15 transition hover:bg-[#841424] focus:outline-none focus:ring-4 focus:ring-blue-200">
           <Icon name="plus" size={17} /> Crear programa
         </button>
       </div>

@@ -55,7 +55,7 @@ function App() {
       if (activeProgram.id === updated.id) setActiveProgram(updated)
       setToast('El programa y su nueva configuración quedaron guardados en el prototipo.')
     } else {
-      const created = { id: `demo-${Date.now()}`, shortName: form.name.replace(/^(Licenciatura|Maestría|Especialidad|Doctorado) en /, ''), plan: form.code, version: 'v0.1', status: 'Borrador', progress: 12, updated: 'Ahora', cycleLabel: form.level === 'Licenciatura' ? 'Semestre' : 'Cuatrimestre', accent: 'from-blue-600 to-indigo-600', ...form }
+      const created = { id: `demo-${Date.now()}`, shortName: form.name.replace(/^(Licenciatura|Maestría|Especialidad|Doctorado) en /, ''), plan: form.code, version: 'v0.1', status: 'Borrador', progress: 12, updated: 'Ahora', cycleLabel: form.level === 'Licenciatura' ? 'Semestre' : 'Cuatrimestre', accent: 'from-blue-600 to-amber-500', ...form }
       setPrograms((items) => [created, ...items])
       setToast('Se creó el programa de demostración.')
     }

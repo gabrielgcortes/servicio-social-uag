@@ -9,7 +9,7 @@ export default function CycleColumn({ cycle, subjects, program, onAdd, onEdit, o
       <header className={`border-b p-3.5 ${exceeded ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white'}`}>
         <div className="flex items-start justify-between gap-3">
           <div><p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">{program.cycleLabel}</p><h3 className="mt-0.5 text-sm font-bold text-slate-900">{cycleName(cycle)}</h3></div>
-          <button type="button" onClick={() => onAdd(cycle)} aria-label={`Añadir al ciclo ${cycle}`} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-[#245a96] shadow-sm transition hover:border-blue-300 hover:bg-blue-50"><Icon name="plus" size={15} /></button>
+          <button type="button" onClick={() => onAdd(cycle)} aria-label={`Añadir al ciclo ${cycle}`} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-[#A6192E] shadow-sm transition hover:border-blue-300 hover:bg-blue-50"><Icon name="plus" size={15} /></button>
         </div>
         <div className="mt-3 flex items-center gap-3 text-[10px] font-medium text-slate-500">
           <span className="flex items-center gap-1"><Icon name="book" size={12} /> {subjects.length}/{program.maxSubjects} materias</span>

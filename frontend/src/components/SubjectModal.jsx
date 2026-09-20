@@ -94,7 +94,7 @@ export default function SubjectModal({ open, subject, cycle, program, subjects, 
 
         <footer className="flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
           <p className="hidden text-[10px] text-slate-400 sm:block">Los cambios actualizarán las validaciones del mapa.</p>
-          <div className="ml-auto flex gap-2"><button type="button" onClick={onClose} className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button><button type="submit" className="flex h-10 items-center gap-2 rounded-xl bg-[#173b69] px-4 text-sm font-semibold text-white hover:bg-[#214f87]"><Icon name="save" size={15} /> Guardar</button></div>
+          <div className="ml-auto flex gap-2"><button type="button" onClick={onClose} className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button><button type="submit" className="flex h-10 items-center gap-2 rounded-xl bg-[#A6192E] px-4 text-sm font-semibold text-white hover:bg-[#841424]"><Icon name="save" size={15} /> Guardar</button></div>
         </footer>
       </form>
     </div>

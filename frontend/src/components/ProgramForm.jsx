@@ -33,7 +33,7 @@ export default function ProgramForm({ initial, onCancel, onSave }) {
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={onCancel} className="h-10 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button>
-          <button type="submit" className="flex h-10 items-center gap-2 rounded-xl bg-[#173b69] px-4 text-sm font-semibold text-white hover:bg-[#214f87]"><Icon name="save" size={16} /> Guardar programa</button>
+          <button type="submit" className="flex h-10 items-center gap-2 rounded-xl bg-[#A6192E] px-4 text-sm font-semibold text-white hover:bg-[#841424]"><Icon name="save" size={16} /> Guardar programa</button>
         </div>
       </div>
 
@@ -76,7 +76,7 @@ export default function ProgramForm({ initial, onCancel, onSave }) {
 
         <aside className="xl:sticky xl:top-24 xl:self-start">
           <div className="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-lg shadow-blue-900/5">
-            <div className="bg-[#173b69] p-5 text-white"><div className="flex items-center gap-2 text-xs font-semibold text-blue-100"><Icon name="sparkles" size={16} /> Reglas sugeridas</div><p className="mt-2 text-lg font-bold">{form.level}</p><p className="mt-1 text-xs text-blue-100">{form.modality}</p></div>
+            <div className="bg-[#A6192E] p-5 text-white"><div className="flex items-center gap-2 text-xs font-semibold text-blue-100"><Icon name="sparkles" size={16} /> Reglas sugeridas</div><p className="mt-2 text-lg font-bold">{form.level}</p><p className="mt-1 text-xs text-blue-100">{form.modality}</p></div>
             <div className="space-y-4 p-5">
               <RuleRow label="Duración" value={`${rules.cycles} ciclos × ${rules.weeks} semanas`} matches={form.cycles === rules.cycles && form.weeks === rules.weeks} />
               <RuleRow label="Créditos totales" value={`${rules.minCredits}–${rules.maxCredits}`} matches={form.minCredits === rules.minCredits && form.maxCredits === rules.maxCredits} />

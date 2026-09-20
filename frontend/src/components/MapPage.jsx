@@ -28,7 +28,7 @@ export default function MapPage({ program, subjects, validations, onAdd, onEdit,
             <button type="button" onClick={() => onNotify('Versión duplicada como borrador v2.4.')} className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"><Icon name="copy" size={14} /> Duplicar versión</button>
             <button type="button" onClick={() => { setView('validations'); setPanel(false) }} className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"><Icon name="circleCheck" size={14} /> Validar <span className="rounded-full bg-red-100 px-1.5 text-[9px] text-red-700">{errors}</span></button>
             <button type="button" onClick={onExport} className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"><Icon name="export" size={14} /> Exportar</button>
-            <button type="button" onClick={() => onNotify('Los cambios del prototipo quedaron guardados en esta sesión.')} className="flex h-9 items-center gap-1.5 rounded-xl bg-[#173b69] px-3.5 text-xs font-semibold text-white shadow-sm hover:bg-[#214f87]"><Icon name="save" size={14} /> Guardar cambios</button>
+            <button type="button" onClick={() => onNotify('Los cambios del prototipo quedaron guardados en esta sesión.')} className="flex h-9 items-center gap-1.5 rounded-xl bg-[#A6192E] px-3.5 text-xs font-semibold text-white shadow-sm hover:bg-[#841424]"><Icon name="save" size={14} /> Guardar cambios</button>
           </div>
         </div>
       </section>
@@ -49,7 +49,7 @@ export default function MapPage({ program, subjects, validations, onAdd, onEdit,
       <div className="mx-auto max-w-[1760px] px-3 py-4 sm:px-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="inline-flex self-start rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-            {[['cycles', 'Vista por ciclos', 'layers'], ['areas', 'Por área', 'grid'], ['validations', 'Validaciones', 'circleCheck']].map(([id, label, icon]) => <button key={id} type="button" onClick={() => setView(id)} className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${view === id ? 'bg-[#173b69] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}><Icon name={icon} size={13} /> {label}</button>)}
+            {[['cycles', 'Vista por ciclos', 'layers'], ['areas', 'Por área', 'grid'], ['validations', 'Validaciones', 'circleCheck']].map(([id, label, icon]) => <button key={id} type="button" onClick={() => setView(id)} className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-semibold transition ${view === id ? 'bg-[#A6192E] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}><Icon name={icon} size={13} /> {label}</button>)}
           </div>
           <div className="flex items-center gap-2">
             <p className="hidden text-[10px] text-slate-400 sm:block">Usa “Mover” o las flechas para reorganizar las asignaturas.</p>

@@ -13,7 +13,7 @@ export default function ProgramCard({ program, onOpen, onEdit }) {
       <div className={`h-1.5 bg-gradient-to-r ${program.accent}`} />
       <div className="p-5">
         <div className="flex items-start justify-between gap-4">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-sm font-extrabold text-[#173b69]">{program.mnemonic}</div>
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-sm font-extrabold text-[#A6192E]">{program.mnemonic}</div>
           <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ring-1 ${statusStyles[program.status] || statusStyles.Borrador}`}>{program.status}</span>
         </div>
         <h3 className="mt-4 min-h-12 text-[15px] font-bold leading-snug text-slate-900">{program.name}</h3>
@@ -34,7 +34,7 @@ export default function ProgramCard({ program, onOpen, onEdit }) {
             <span className="flex items-center gap-1.5 text-[10px] text-slate-400"><Icon name="clock" size={13} />{program.updated}</span>
             <div className="flex gap-1">
               <button type="button" onClick={() => onEdit(program)} className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800">Editar</button>
-              <button type="button" onClick={() => onOpen(program)} className="flex items-center gap-1 rounded-lg bg-[#173b69] px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#214f87]">Abrir mapa <Icon name="chevronRight" size={13} /></button>
+              <button type="button" onClick={() => onOpen(program)} className="flex items-center gap-1 rounded-lg bg-[#A6192E] px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#841424]">Abrir mapa <Icon name="chevronRight" size={13} /></button>
             </div>
           </div>
         </div>
