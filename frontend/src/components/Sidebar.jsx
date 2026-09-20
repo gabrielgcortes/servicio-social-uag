@@ -1,15 +1,16 @@
+import { NavLink, useLocation } from 'react-router-dom'
 import Icon from './Icon'
 
 const navItems = [
-  { id: 'programs', label: 'Programas', icon: 'grid' },
-  { id: 'map', label: 'Mapas curriculares', icon: 'map' },
-  { id: 'catalog', label: 'Catálogo de asignaturas', icon: 'book' },
-  { id: 'config', label: 'Configuración', icon: 'settings' },
-  { id: 'exports', label: 'Exportaciones', icon: 'export' },
+  { id: 'programs', label: 'Programas', icon: 'grid', path: '/programas' },
+  { id: 'map', label: 'Mapas curriculares', icon: 'map', path: '/mapas' },
+  { id: 'catalog', label: 'Catálogo de asignaturas', icon: 'book', path: '/catalogo' },
+  { id: 'config', label: 'Configuración', icon: 'settings', path: '/configuracion' },
+  { id: 'exports', label: 'Exportaciones', icon: 'export', path: '/exportaciones' },
 ]
 
-export default function
-  Sidebar({ currentPage, onNavigate, open, onClose }) {
+export default function Sidebar({ activeProgramId, open, onClose }) {
+  const location = useLocation()
   return (
     <>
       {open && <button aria-label="Cerrar menú" className="fixed inset-0 z-30 bg-slate-950/30 backdrop-blur-sm lg:hidden" onClick={onClose} />}
@@ -27,18 +28,32 @@ export default function
         <div className="mt-8 px-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Navegación</div>
         <nav className="mt-3 space-y-1" aria-label="Navegación principal">
           {navItems.map((item) => {
-            const active = currentPage === item.id || (currentPage === 'programForm' && item.id === 'programs')
+            const targetPath = item.id === 'map' && activeProgramId ? `/mapas/${activeProgramId}` : item.path
+            const isItemActive = (item.id === 'programs' && (location.pathname === '/' || location.pathname.startsWith('/programas'))) ||
+              (item.id === 'map' && location.pathname.startsWith('/mapas')) ||
+              (item.id === 'catalog' && location.pathname.startsWith('/catalogo')) ||
+              (item.id === 'config' && location.pathname.startsWith('/configuracion')) ||
+              (item.id === 'exports' && location.pathname.startsWith('/exportaciones'))
+
             return (
-              <button
+              <NavLink
                 key={item.id}
-                type="button"
-                onClick={() => { onNavigate(item.id); onClose() }}
-                className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${active ? 'bg-[#F5E1E5] text-[#A6192E]' : 'text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm'}`}
+                to={targetPath}
+                onClick={onClose}
+                className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+                  isItemActive
+                    ? 'bg-[#F5E1E5] text-[#A6192E]'
+                    : 'text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm'
+                }`}
               >
-                <Icon name={item.icon} size={18} className={active ? 'text-[#A6192E]' : 'text-slate-400 group-hover:text-slate-600'} />
+                <Icon
+                  name={item.icon}
+                  size={18}
+                  className={isItemActive ? 'text-[#A6192E]' : 'text-slate-400 group-hover:text-slate-600'}
+                />
                 <span className="flex-1">{item.label}</span>
                 {item.id === 'map' && <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-slate-500">4</span>}
-              </button>
+              </NavLink>
             )
           })}
         </nav>
