@@ -2,11 +2,13 @@ import { useMemo, useState } from 'react'
 import Icon from '../components/Icon'
 import CurriculumMap from '../components/CurriculumMap'
 import ValidationPanel from '../components/ValidationPanel'
+import UnassignedSubjectsPanel from '../components/UnassignedSubjectsPanel'
 import { curriculumSummary } from '../utils/validation'
 
-export default function MapPage({ program, subjects, validations, onAdd, onEdit, onMove, onReorder, onDropSubject, onExport, onNotify }) {
+export default function MapPage({ program, subjects, availableSubjects, validations, onAdd, onEdit, onMove, onReorder, onRemove, onAssign, onDropSubject, onExport, onNotify }) {
   const [view, setView] = useState('cycles')
   const [panel, setPanel] = useState(false)
+  const [availablePanel, setAvailablePanel] = useState(true)
   const summary = useMemo(() => curriculumSummary(subjects), [subjects])
   const errors = validations.filter((item) => item.severity === 'error').length
   const warnings = validations.filter((item) => item.severity === 'warning').length
@@ -53,11 +55,12 @@ export default function MapPage({ program, subjects, validations, onAdd, onEdit,
           </div>
           <div className="flex items-center gap-2">
             <p className="hidden text-[10px] text-slate-400 sm:block">Arrastra asignaturas entre ciclos o dentro de la columna para reorganizarlas.</p>
+            <button type="button" onClick={() => setAvailablePanel((value) => !value)} aria-label={availablePanel ? 'Ocultar materias disponibles' : 'Mostrar materias disponibles'} title={availablePanel ? 'Ocultar materias disponibles' : 'Mostrar materias disponibles'} className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[11px] font-semibold ${availablePanel ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600'}`}><Icon name={availablePanel ? 'x' : 'book'} size={13} /> Materias</button>
             <button type="button" onClick={() => setPanel((value) => !value)} className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[11px] font-semibold ${panel ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600'}`}><Icon name="alert" size={13} /> Panel de validación</button>
           </div>
         </div>
 
-        <div className={`mt-3 grid gap-3 ${panel && view !== 'validations' ? 'xl:grid-cols-[minmax(0,1fr)_360px]' : ''}`}>
+        <div className={`mt-3 grid items-start gap-3 ${(panel || availablePanel) && view !== 'validations' ? 'xl:grid-cols-[minmax(0,1fr)_360px]' : ''}`}>
           <main className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             {view === 'validations' ? (
               <ValidationPanel validations={validations} onGoToSubject={goToSubject} />
@@ -70,11 +73,13 @@ export default function MapPage({ program, subjects, validations, onAdd, onEdit,
                 onEdit={onEdit}
                 onMove={onMove}
                 onReorder={onReorder}
+                onRemove={onRemove}
+                onAssign={onAssign}
                 onDropSubject={onDropSubject}
               />
             )}
           </main>
-          {panel && view !== 'validations' && <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center justify-between"><div><h3 className="text-sm font-bold text-slate-900">Validación en vivo</h3><p className="mt-0.5 text-[10px] text-slate-400">Se actualiza al mover o editar</p></div><button type="button" onClick={() => setPanel(false)} aria-label="Cerrar panel" className="grid h-7 w-7 place-items-center rounded-lg bg-slate-100 text-slate-500"><Icon name="x" size={13} /></button></div><div className="mt-4"><ValidationPanel compact validations={validations} onGoToSubject={goToSubject} /></div></aside>}
+          {(panel || availablePanel) && view !== 'validations' && <aside className="space-y-3 xl:sticky xl:top-[84px] xl:h-[calc(100vh-96px)] xl:self-start xl:overflow-y-auto xl:overscroll-contain">{availablePanel && <UnassignedSubjectsPanel assignedSubjects={subjects} availableSubjects={availableSubjects} onClose={() => setAvailablePanel(false)} onUnassign={onRemove} fullHeight={!panel} />}{panel && <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center justify-between"><div><h3 className="text-sm font-bold text-slate-900">Validación en vivo</h3><p className="mt-0.5 text-[10px] text-slate-400">Se actualiza al mover o editar</p></div><button type="button" onClick={() => setPanel(false)} aria-label="Cerrar panel" className="grid h-7 w-7 place-items-center rounded-lg bg-slate-100 text-slate-500"><Icon name="x" size={13} /></button></div><div className="mt-4"><ValidationPanel compact validations={validations} onGoToSubject={goToSubject} /></div></section>}</aside>}
         </div>
       </div>
     </div>

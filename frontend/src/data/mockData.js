@@ -139,7 +139,7 @@ export const initialSubjects = [
   subject(50, 8, 'Gestión de proyectos', { key: 'LSW050', teacherHours: 48, independentHours: 32, credits: 5, area: 'Profesional', room: 'A,L' }),
   subject(51, 8, 'Proyecto de innovación tecnológica II', { key: 'LSW051', prerequisite: 'LSW034', teacherHours: 32, independentHours: 32, credits: 4, area: 'Profesional', room: 'A,L' }),
   subject(52, 8, 'Prácticas profesionales 2', { key: 'LSW052', teacherHours: 16, independentHours: 224, credits: 15, room: 'O', area: 'Profesional', practice: true }),
-]
+].map((subject) => ({ ...subject, programId: 'lsw' }))
 
 export const ownElectives = [
   subject(53, 7, 'Análisis y diseño de sistemas con big data', { key: 'LSW053', type: 'Optativa', teacherHours: 48, independentHours: 48, credits: 6, area: 'Profesional', room: 'A,L' }),

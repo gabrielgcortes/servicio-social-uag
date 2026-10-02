@@ -14,6 +14,8 @@ export default function CycleColumn({
   onEdit,
   onMove,
   onReorder,
+  onRemove,
+  onAssign,
 }) {
   const [isColumnOver, setIsColumnOver] = useState(false)
   const credits = subjects.reduce((sum, item) => sum + Number(item.credits || 0), 0)
@@ -34,8 +36,10 @@ export default function CycleColumn({
   const handleDrop = (e) => {
     e.preventDefault()
     setIsColumnOver(false)
-    const id = e.dataTransfer.getData('text/plain') || draggedSubjectId
-    if (id && onDropSubject) {
+    const [source, id] = e.dataTransfer.getData('text/plain').split(':')
+    if (source === 'available' && id && onAssign) {
+      onAssign(id, cycle)
+    } else if (id && onDropSubject) {
       onDropSubject(id, cycle, null, false)
     }
   }
@@ -78,6 +82,8 @@ export default function CycleColumn({
             onEdit={onEdit}
             onMove={onMove}
             onReorder={onReorder}
+            onRemove={onRemove}
+            onAssign={onAssign}
           />
         ))}
 

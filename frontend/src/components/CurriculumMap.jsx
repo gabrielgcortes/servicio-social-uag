@@ -2,7 +2,7 @@ import { useState } from 'react'
 import CycleColumn from './CycleColumn'
 import SubjectCard from './SubjectCard'
 
-export default function CurriculumMap({ view, subjects, program, onAdd, onEdit, onMove, onReorder, onDropSubject }) {
+export default function CurriculumMap({ view, subjects, program, onAdd, onEdit, onMove, onReorder, onRemove, onAssign, onDropSubject }) {
   const [draggedSubjectId, setDraggedSubjectId] = useState(null)
 
   const handleDragStart = (id) => {
@@ -46,6 +46,8 @@ export default function CurriculumMap({ view, subjects, program, onAdd, onEdit, 
                     onEdit={onEdit}
                     onMove={onMove}
                     onReorder={onReorder}
+                    onRemove={onRemove}
+                    onAssign={onAssign}
                   />
                 ))}
               </div>
@@ -72,6 +74,8 @@ export default function CurriculumMap({ view, subjects, program, onAdd, onEdit, 
           onEdit={onEdit}
           onMove={onMove}
           onReorder={onReorder}
+          onRemove={onRemove}
+          onAssign={onAssign}
         />
       ))}
     </div>

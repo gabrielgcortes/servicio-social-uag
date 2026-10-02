@@ -55,17 +55,22 @@ function EditProgramWrapper({ programs, onSave, onCancel }) {
 function MapPageWrapper({
   programs,
   subjects,
+  electives,
   onSetActiveProgram,
   onAddSubject,
   onEditSubject,
   onMoveSubject,
   onReorderSubject,
+  onRemoveSubject,
+  onAssignSubject,
   onDropSubject,
   onExport,
   onNotify,
 }) {
   const { id } = useParams()
   const program = programs.find((item) => item.id === id) || programs[0]
+  const programSubjects = subjects.filter((subject) => subject.programId === program?.id)
+  const availableSubjects = [...subjects.filter((subject) => !subject.isElectiveSlot), ...electives]
 
   useEffect(() => {
     if (program) {
@@ -74,8 +79,8 @@ function MapPageWrapper({
   }, [program, onSetActiveProgram])
 
   const validations = useMemo(
-    () => (program ? validateCurriculum(subjects, program, initialMockValidations) : []),
-    [subjects, program]
+    () => (program ? validateCurriculum(programSubjects, program, initialMockValidations) : []),
+    [programSubjects, program]
   )
 
   if (!program) {
@@ -85,12 +90,15 @@ function MapPageWrapper({
   return (
     <MapPage
       program={program}
-      subjects={subjects}
+      subjects={programSubjects}
+      availableSubjects={availableSubjects}
       validations={validations}
       onAdd={onAddSubject}
       onEdit={onEditSubject}
       onMove={onMoveSubject}
       onReorder={onReorderSubject}
+      onRemove={onRemoveSubject}
+      onAssign={onAssignSubject}
       onDropSubject={onDropSubject}
       onExport={() => onExport(program)}
       onNotify={onNotify}
@@ -188,14 +196,14 @@ function App() {
         setSubjects((items) =>
           items.some((item) => item.id === saved.id)
             ? items.map((item) => (item.id === saved.id ? saved : item))
-            : [...items, saved]
+            : [...items, { ...saved, programId: null }]
         )
       }
     } else {
       setSubjects((items) =>
         items.some((item) => item.id === saved.id)
           ? items.map((item) => (item.id === saved.id ? saved : item))
-          : [...items, saved]
+          : [...items, { ...saved, programId: activeProgram?.id }]
       )
     }
     setSubjectModal(null)
@@ -211,7 +219,7 @@ function App() {
   const reorderSubject = (id, direction) => {
     setSubjects((items) => {
       const current = items.find((item) => item.id === id)
-      const sameCycle = items.filter((item) => item.cycle === current.cycle)
+      const sameCycle = items.filter((item) => item.programId === current.programId && item.cycle === current.cycle)
       const position = sameCycle.findIndex((item) => item.id === id)
       const target = sameCycle[position + direction]
       if (!target) return items
@@ -221,6 +229,35 @@ function App() {
       ;[copy[a], copy[b]] = [copy[b], copy[a]]
       return copy
     })
+  }
+
+  const removeSubject = (id) => {
+    const removed = subjects.find((item) => String(item.id) === String(id))
+    if (!removed) return
+    setSubjects((items) => removed.catalogAssignment
+      ? items.filter((item) => String(item.id) !== String(id))
+      : items.map((item) => (String(item.id) === String(id) ? { ...item, programId: null } : item))
+    )
+    setToast(`${removed.name} se quitó del mapa y está disponible para asignarse.`)
+  }
+
+  const assignSubject = (key, cycle) => {
+    const source = [...electives, ...subjects].find((item) => item.key === key)
+    if (!source || !activeProgram) return
+
+    setSubjects((items) => {
+      const alreadyAssigned = items.some((item) => item.programId === activeProgram.id && item.key === key)
+      if (alreadyAssigned) return items
+      return [...items, {
+        ...source,
+        id: `assignment-${activeProgram.id}-${key}-${Date.now()}`,
+        cycle,
+        programId: activeProgram.id,
+        catalogAssignment: true,
+        isElectiveSlot: false,
+      }]
+    })
+    setToast(`${source.name} se agregó al ciclo ${cycle}.`)
   }
 
   const handleDropSubject = (subjectId, targetCycle, targetSubjectId = null, placeAfter = false) => {
@@ -249,7 +286,7 @@ function App() {
       }
 
       // Case 2: Dropped into a cycle column (append at the end of that cycle)
-      const cycleItems = remaining.filter((s) => Number(s.cycle) === numericTargetCycle)
+      const cycleItems = remaining.filter((s) => s.programId === subjectToMove.programId && Number(s.cycle) === numericTargetCycle)
       if (cycleItems.length > 0) {
         const lastItem = cycleItems[cycleItems.length - 1]
         const lastIndex = remaining.findIndex((s) => String(s.id) === String(lastItem.id))
@@ -258,7 +295,7 @@ function App() {
         return result
       } else {
         // No items in this cycle yet, find position among surrounding cycles
-        const nextCycleItem = remaining.find((s) => Number(s.cycle) > numericTargetCycle)
+        const nextCycleItem = remaining.find((s) => s.programId === subjectToMove.programId && Number(s.cycle) > numericTargetCycle)
         if (nextCycleItem) {
           const nextIndex = remaining.findIndex((s) => String(s.id) === String(nextCycleItem.id))
           const result = [...remaining]
@@ -340,6 +377,7 @@ function App() {
               <MapPageWrapper
                 programs={programs}
                 subjects={subjects}
+                electives={electives}
                 onSetActiveProgram={setActiveProgram}
                 onAddSubject={(cycle) => setSubjectModal({ subject: null, cycle, source: 'map' })}
                 onEditSubject={(subject) =>
@@ -347,6 +385,8 @@ function App() {
                 }
                 onMoveSubject={moveSubject}
                 onReorderSubject={reorderSubject}
+                onRemoveSubject={removeSubject}
+                onAssignSubject={assignSubject}
                 onDropSubject={handleDropSubject}
                 onExport={(program) => setExportProgram(program)}
                 onNotify={setToast}
@@ -381,7 +421,7 @@ function App() {
           subject={subjectModal.subject}
           cycle={subjectModal.cycle || 1}
           program={activeProgram}
-          subjects={[...subjects, ...electives]}
+          subjects={[...subjects.filter((subject) => subject.programId === activeProgram?.id), ...electives]}
           onClose={() => setSubjectModal(null)}
           onSave={saveSubject}
         />

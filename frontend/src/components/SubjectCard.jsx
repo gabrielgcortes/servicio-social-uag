@@ -20,14 +20,16 @@ export default function SubjectCard({
   onEdit,
   onMove,
   onReorder,
+  onRemove,
+  onAssign,
 }) {
   const [menu, setMenu] = useState(false)
   const [dropPosition, setDropPosition] = useState(null)
   const elective = subject.isElectiveSlot
 
   const handleDragStart = (e) => {
-    e.dataTransfer.setData('text/plain', subject.id)
-    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', `map:${subject.id}`)
+    e.dataTransfer.effectAllowed = 'all'
     if (onDragStart) onDragStart(subject.id)
   }
 
@@ -37,7 +39,7 @@ export default function SubjectCard({
   }
 
   const handleDragOver = (e) => {
-    if (!draggedSubjectId || String(draggedSubjectId) === String(subject.id)) return
+    if (draggedSubjectId && String(draggedSubjectId) === String(subject.id)) return
     e.preventDefault()
     e.stopPropagation()
     e.dataTransfer.dropEffect = 'move'
@@ -54,13 +56,15 @@ export default function SubjectCard({
   }
 
   const handleDrop = (e) => {
-    if (!draggedSubjectId || String(draggedSubjectId) === String(subject.id)) return
+    const [source, id] = e.dataTransfer.getData('text/plain').split(':')
+    if (!id || (source === 'map' && String(id) === String(subject.id))) return
     e.preventDefault()
     e.stopPropagation()
-    const id = e.dataTransfer.getData('text/plain') || draggedSubjectId
     const placeAfter = dropPosition === 'bottom'
     setDropPosition(null)
-    if (id && String(id) !== String(subject.id) && onDropSubject) {
+    if (source === 'available' && onAssign) {
+      onAssign(id, subject.cycle)
+    } else if (String(id) !== String(subject.id) && onDropSubject) {
       onDropSubject(id, subject.cycle, subject.id, placeAfter)
     }
   }
@@ -125,9 +129,12 @@ export default function SubjectCard({
           <button type="button" onClick={(e) => { e.stopPropagation(); onReorder(subject.id, -1); }} aria-label="Mover arriba" className="grid h-6 w-6 place-items-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700"><Icon name="arrowUp" size={12} /></button>
           <button type="button" onClick={(e) => { e.stopPropagation(); onReorder(subject.id, 1); }} aria-label="Mover abajo" className="grid h-6 w-6 place-items-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700"><Icon name="arrowDown" size={12} /></button>
         </div>
-        <div className="relative">
-          <button type="button" onClick={(e) => { e.stopPropagation(); setMenu((value) => !value); }} className="flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-semibold text-slate-500 hover:bg-slate-100"><Icon name="move" size={11} /> Mover</button>
-          {menu && <div className="absolute bottom-7 right-0 z-20 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-xl"><p className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-slate-400">Mover a ciclo</p>{Array.from({ length: totalCycles }, (_, index) => index + 1).map((cycle) => <button key={cycle} type="button" disabled={cycle === subject.cycle} onClick={(e) => { e.stopPropagation(); onMove(subject.id, cycle); setMenu(false); }} className="block w-full rounded-lg px-2 py-1.5 text-left text-[10px] text-slate-600 hover:bg-blue-50 disabled:opacity-30">Ciclo {cycle}</button>)}</div>}
+        <div className="flex items-center gap-1">
+          <div className="relative">
+            <button type="button" onClick={(e) => { e.stopPropagation(); setMenu((value) => !value); }} className="flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-semibold text-slate-500 hover:bg-slate-100"><Icon name="move" size={11} /> Mover</button>
+            {menu && <div className="absolute bottom-7 right-0 z-20 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-xl"><p className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-slate-400">Mover a ciclo</p>{Array.from({ length: totalCycles }, (_, index) => index + 1).map((cycle) => <button key={cycle} type="button" disabled={cycle === subject.cycle} onClick={(e) => { e.stopPropagation(); onMove(subject.id, cycle); setMenu(false); }} className="block w-full rounded-lg px-2 py-1.5 text-left text-[10px] text-slate-600 hover:bg-blue-50 disabled:opacity-30">Ciclo {cycle}</button>)}</div>}
+          </div>
+          {!elective && <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(subject.id); }} aria-label={`Quitar ${subject.name} del mapa`} title="Quitar del mapa" className="grid h-6 w-6 place-items-center rounded text-slate-400 transition hover:bg-red-50 hover:text-red-600"><Icon name="x" size={13} /></button>}
         </div>
       </div>
     </article>
