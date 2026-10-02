@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import Icon from './Icon'
+import Icon from '../components/Icon'
 import { suggestedRules } from '../data/mockData'
 
 const fieldClass = 'mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50'

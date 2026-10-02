@@ -77,4 +77,3 @@ export default function CurriculumMap({ view, subjects, program, onAdd, onEdit, 
     </div>
   )
 }
-

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Icon from './Icon'
+import Icon from '../components/Icon'
 import { suggestedRules } from '../data/mockData'
 
 export default function ConfigPage({ onNotify }) {

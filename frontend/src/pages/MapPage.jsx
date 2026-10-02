@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import Icon from './Icon'
-import CurriculumMap from './CurriculumMap'
-import ValidationPanel from './ValidationPanel'
+import Icon from '../components/Icon'
+import CurriculumMap from '../components/CurriculumMap'
+import ValidationPanel from '../components/ValidationPanel'
 import { curriculumSummary } from '../utils/validation'
 
 export default function MapPage({ program, subjects, validations, onAdd, onEdit, onMove, onReorder, onDropSubject, onExport, onNotify }) {

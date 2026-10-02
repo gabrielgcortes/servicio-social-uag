@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import Icon from './Icon'
+import Icon from '../components/Icon'
 
 export default function CatalogTable({ subjects, electives, institutional, onEdit }) {
   const [search, setSearch] = useState('')

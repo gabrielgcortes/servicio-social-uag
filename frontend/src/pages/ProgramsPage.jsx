@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import Icon from './Icon'
-import ProgramCard from './ProgramCard'
+import Icon from '../components/Icon'
+import ProgramCard from '../components/ProgramCard'
 
 export default function ProgramsPage({ programs, onOpen, onEdit, onCreate }) {
   const [search, setSearch] = useState('')
