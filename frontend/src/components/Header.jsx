@@ -1,10 +1,20 @@
 import Icon from './Icon'
 
-export default function Header({ title, subtitle, onMenu, children }) {
+export default function Header({ title, subtitle, onMenu, sidebarOpen, onToggleSidebar, children }) {
   return (
     <header className="sticky top-0 z-20 flex min-h-[72px] items-center gap-4 border-b border-slate-200 bg-white/95 px-4 backdrop-blur-md sm:px-6 lg:px-8">
       <button type="button" aria-label="Abrir menú" onClick={onMenu} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-600 lg:hidden">
         <Icon name="menu" />
+      </button>
+      <button
+        type="button"
+        aria-label={sidebarOpen ? 'Ocultar barra lateral' : 'Mostrar barra lateral'}
+        aria-pressed={sidebarOpen}
+        title={sidebarOpen ? 'Ocultar barra lateral' : 'Mostrar barra lateral'}
+        onClick={onToggleSidebar}
+        className="hidden h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-600 transition hover:bg-slate-50 lg:grid"
+      >
+        <Icon name={sidebarOpen ? 'x' : 'menu'} />
       </button>
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-[17px] font-bold tracking-tight text-slate-900 sm:text-lg">{title}</h1>

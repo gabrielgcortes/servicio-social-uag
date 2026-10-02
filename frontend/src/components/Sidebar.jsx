@@ -9,12 +9,12 @@ const navItems = [
   { id: 'exports', label: 'Exportaciones', icon: 'export', path: '/exportaciones' },
 ]
 
-export default function Sidebar({ activeProgramId, open, onClose }) {
+export default function Sidebar({ activeProgramId, open, desktopOpen, onClose }) {
   const location = useLocation()
   return (
     <>
       {open && <button aria-label="Cerrar menú" className="fixed inset-0 z-30 bg-slate-950/30 backdrop-blur-sm lg:hidden" onClick={onClose} />}
-      <aside className={`fixed inset-y-0 left-0 z-40 flex w-[268px] flex-col border-r border-slate-200 bg-[#F8F7F2] px-4 py-5 transition-transform duration-300 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 flex w-[268px] flex-col border-r border-slate-200 bg-[#F8F7F2] px-4 py-5 transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'} ${desktopOpen ? 'lg:translate-x-0' : 'lg:-translate-x-full'}`}>
         <div className="flex items-center gap-3 px-2">
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#A6192E] text-white shadow-sm">
             <Icon name="school" size={22} />

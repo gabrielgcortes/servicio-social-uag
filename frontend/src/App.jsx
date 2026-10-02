@@ -107,6 +107,7 @@ function App() {
   const [subjects, setSubjects] = useState(initialSubjects)
   const [electives, setElectives] = useState(ownElectives)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [sidebarVisible, setSidebarVisible] = useState(true)
   const [subjectModal, setSubjectModal] = useState(null)
   const [exportProgram, setExportProgram] = useState(null)
   const [toast, setToast] = useState('')
@@ -279,10 +280,17 @@ function App() {
       <Sidebar
         activeProgramId={activeProgram?.id || programs[0]?.id}
         open={menuOpen}
+        desktopOpen={sidebarVisible}
         onClose={() => setMenuOpen(false)}
       />
-      <div className="min-h-screen lg:pl-[268px]">
-        <Header title={title} subtitle={subtitle} onMenu={() => setMenuOpen(true)} />
+      <div className={`min-h-screen transition-[padding] duration-300 ${sidebarVisible ? 'lg:pl-[268px]' : 'lg:pl-0'}`}>
+        <Header
+          title={title}
+          subtitle={subtitle}
+          onMenu={() => setMenuOpen(true)}
+          sidebarOpen={sidebarVisible}
+          onToggleSidebar={() => setSidebarVisible((visible) => !visible)}
+        />
 
         <Routes>
           <Route path="/" element={<Navigate to="/programas" replace />} />
@@ -396,4 +404,3 @@ function App() {
 }
 
 export default App
-
