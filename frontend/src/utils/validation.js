@@ -1,3 +1,5 @@
+import { getDeaneryPreestablishedSubjects, normalizeSubjectName } from '../data/deaneryRequirements.js'
+
 export function curriculumSummary(subjects) {
   return subjects.reduce(
     (totals, item) => ({
@@ -97,11 +99,9 @@ export function validateCurriculum(subjects, program, baseValidations = []) {
     })
   }
 
-  const requiredSubjects = program.deanery.startsWith('Diseño')
-    ? [{ name: 'Lógica y filosofía de la ciencia', cycle: 2 }, { name: 'Bioética', cycle: 6 }, { name: 'Laboratorio de emprendimiento', cycle: 7 }]
-    : [{ name: 'Lógica y filosofía de la ciencia', cycle: 3 }, { name: 'Ética profesional', cycle: 7 }]
+  const requiredSubjects = getDeaneryPreestablishedSubjects(program.deanery)
   requiredSubjects.forEach((required) => {
-    const found = subjects.find((item) => item.name === required.name)
+    const found = subjects.find((item) => normalizeSubjectName(item.name) === normalizeSubjectName(required.name))
     if (!found || found.cycle !== required.cycle) {
       validations.push({
         id: `required-${required.name}`,

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import Icon from '../components/Icon'
 import { suggestedRules } from '../data/mockData'
+import { getDeaneryPreestablishedSubjects } from '../data/deaneryRequirements'
 
 const fieldClass = 'mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50'
 
@@ -15,6 +16,7 @@ export default function ProgramForm({ initial, onCancel, onSave }) {
   })
   const [exception, setException] = useState(false)
   const rules = useMemo(() => suggestedRules[form.level], [form.level])
+  const preestablishedSubjects = getDeaneryPreestablishedSubjects(form.deanery)
   const set = (key, value) => setForm((current) => ({ ...current, [key]: value }))
   const applyLevel = (level) => setForm((current) => ({ ...current, level, ...suggestedRules[level] }))
 
@@ -44,7 +46,7 @@ export default function ProgramForm({ initial, onCancel, onSave }) {
               <Field label="Nombre del programa"><input required value={form.name} onChange={(e) => set('name', e.target.value)} className={fieldClass} placeholder="Ej. Licenciatura en Innovación Tecnológica" /></Field>
               <Field label="Clave / plan"><input required value={form.code} onChange={(e) => set('code', e.target.value)} className={fieldClass} /></Field>
               <Field label="Mnemónico" hint="2–12 caracteres; será el prefijo de las claves"><input required maxLength={12} value={form.mnemonic} onChange={(e) => set('mnemonic', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))} className={fieldClass} placeholder="LIT" /></Field>
-              <Field label="Decanato"><select value={form.deanery} onChange={(e) => set('deanery', e.target.value)} className={fieldClass}><option>Diseño, Ciencia y Tecnología</option><option>Ciencias Sociales, Económicas y Administrativas</option><option>Otro / configurable</option></select></Field>
+              <Field label="Decanato"><select value={form.deanery} onChange={(e) => set('deanery', e.target.value)} className={fieldClass}><option>Diseño, Ciencia y Tecnología</option><option>Ciencias Sociales, Económicas y Administrativas</option><option>Otro / configurable</option></select>{preestablishedSubjects.length > 0 && <p className="mt-1.5 text-[10px] leading-relaxed text-emerald-700">Al guardar se asignarán {preestablishedSubjects.length} materias preestablecidas en los semestres definidos para este decanato.</p>}</Field>
               <Field label="Tipo de reconocimiento"><select value={form.jurisdiction} onChange={(e) => set('jurisdiction', e.target.value)} className={fieldClass}><option>Federal</option><option>Estatal</option></select></Field>
             </div>
           </FormSection>

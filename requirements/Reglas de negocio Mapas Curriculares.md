@@ -115,7 +115,7 @@ Duración: 8 semestres* (Checar excepciones como arquitectura, derecho y salud)
 
 Para el Decanato de Diseño, Ciencia y Tecnología:
 
-![Orden preestablecido para Diseño Ciencia y Tecnología](./m  apas-curriculares/figura-07-orden-diseno-ciencia-tecnologia.png)
+![Orden preestablecido para Diseño Ciencia y Tecnología](./mapas-curriculares/figura-07-orden-diseno-ciencia-tecnologia.png)
 
 Para el Decanato de Ciencias Sociales Económicas y Administrativas:
 

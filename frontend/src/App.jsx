@@ -12,6 +12,7 @@ import ExportModal from './components/ExportModal'
 import ExportsPage from './pages/ExportsPage'
 import Toast from './components/Toast'
 import { initialMockValidations, initialSubjects, institutionalElectives, ownElectives, programs as demoPrograms } from './data/mockData'
+import { createMissingDeanerySubjects } from './data/deaneryRequirements'
 import { validateCurriculum } from './utils/validation'
 
 function getHeaderMeta(pathname) {
@@ -34,6 +35,10 @@ function getHeaderMeta(pathname) {
     return ['Exportaciones', 'Preparación de entregables institucionales']
   }
   return ['Programas', 'Portafolio y versiones curriculares']
+}
+
+function belongsToProgram(subject, programId) {
+  return (subject.ownerProgramId ?? subject.programId) === programId
 }
 
 function EditProgramWrapper({ programs, onSave, onCancel }) {
@@ -70,7 +75,10 @@ function MapPageWrapper({
   const { id } = useParams()
   const program = programs.find((item) => item.id === id) || programs[0]
   const programSubjects = subjects.filter((subject) => subject.programId === program?.id)
-  const availableSubjects = [...subjects.filter((subject) => !subject.isElectiveSlot), ...electives]
+  const availableSubjects = [
+    ...subjects.filter((subject) => !subject.isElectiveSlot && belongsToProgram(subject, program?.id)),
+    ...electives,
+  ]
 
   useEffect(() => {
     if (program) {
@@ -144,8 +152,9 @@ function App() {
   }
 
   const saveProgram = (form, editingProgram = null) => {
+    let savedProgram
     if (editingProgram) {
-      const updated = {
+      savedProgram = {
         ...editingProgram,
         name: form.name,
         mnemonic: form.mnemonic,
@@ -162,11 +171,10 @@ function App() {
         maxCycleCredits: form.maxCycleCredits,
         updated: 'Ahora',
       }
-      setPrograms((items) => items.map((item) => (item.id === updated.id ? updated : item)))
-      if (activeProgram?.id === updated.id) setActiveProgram(updated)
-      setToast('El programa y su nueva configuración quedaron guardados en el prototipo.')
+      setPrograms((items) => items.map((item) => (item.id === savedProgram.id ? savedProgram : item)))
+      if (activeProgram?.id === savedProgram.id) setActiveProgram(savedProgram)
     } else {
-      const created = {
+      savedProgram = {
         id: `demo-${Date.now()}`,
         shortName: form.name.replace(/^(Licenciatura|Maestría|Especialidad|Doctorado) en /, ''),
         plan: form.code,
@@ -178,10 +186,15 @@ function App() {
         accent: 'from-blue-600 to-amber-500',
         ...form,
       }
-      setPrograms((items) => [created, ...items])
-      setActiveProgram(created)
-      setToast('Se creó el programa de demostración.')
+      setPrograms((items) => [savedProgram, ...items])
+      setActiveProgram(savedProgram)
     }
+
+    const assignedSubjects = subjects.filter((subject) => subject.programId === savedProgram.id)
+    const addedSubjects = createMissingDeanerySubjects(savedProgram, assignedSubjects)
+    if (addedSubjects.length) setSubjects((items) => [...items, ...addedSubjects])
+    const action = editingProgram ? 'El programa y su nueva configuración quedaron guardados.' : 'Se creó el programa de demostración.'
+    setToast(addedSubjects.length ? `${action} Se asignaron ${addedSubjects.length} materias preestablecidas.` : action)
     navigate('/programas')
   }
 
@@ -236,14 +249,19 @@ function App() {
     if (!removed) return
     setSubjects((items) => removed.catalogAssignment
       ? items.filter((item) => String(item.id) !== String(id))
-      : items.map((item) => (String(item.id) === String(id) ? { ...item, programId: null } : item))
+      : items.map((item) => (String(item.id) === String(id) ? { ...item, programId: null, ownerProgramId: item.ownerProgramId || removed.programId } : item))
     )
     setToast(`${removed.name} se quitó del mapa y está disponible para asignarse.`)
   }
 
   const assignSubject = (key, cycle) => {
-    const source = [...electives, ...subjects].find((item) => item.key === key)
-    if (!source || !activeProgram) return
+    if (!activeProgram) return
+
+    const source = [
+      ...subjects.filter((item) => belongsToProgram(item, activeProgram.id)),
+      ...electives,
+    ].find((item) => item.key === key)
+    if (!source) return
 
     setSubjects((items) => {
       const alreadyAssigned = items.some((item) => item.programId === activeProgram.id && item.key === key)
@@ -253,6 +271,7 @@ function App() {
         id: `assignment-${activeProgram.id}-${key}-${Date.now()}`,
         cycle,
         programId: activeProgram.id,
+        ownerProgramId: activeProgram.id,
         catalogAssignment: true,
         isElectiveSlot: false,
       }]
@@ -397,9 +416,10 @@ function App() {
             path="/catalogo"
             element={
               <CatalogTable
+                programs={programs}
                 subjects={subjects}
-                electives={electives}
                 institutional={institutionalElectives}
+                onSelectProgram={setActiveProgram}
                 onEdit={(subject) =>
                   setSubjectModal({ subject, cycle: subject?.cycle || 7, source: 'catalog' })
                 }
