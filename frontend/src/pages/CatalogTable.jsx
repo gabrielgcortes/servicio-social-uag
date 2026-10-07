@@ -1,17 +1,25 @@
 import { useMemo, useState } from 'react'
 import Icon from '../components/Icon'
 
-export default function CatalogTable({ programs, subjects, institutional, onSelectProgram, onEdit }) {
+export default function CatalogTable({ programs, subjects, electives, onSelectProgram, onEdit }) {
   const [selectedProgramId, setSelectedProgramId] = useState('')
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState({ type: '', area: '', cycle: '', modality: '', flag: '' })
   const [sort, setSort] = useState('key')
   const selectedProgram = programs.find((program) => program.id === selectedProgramId)
-  const rows = useMemo(() => subjects.filter((item) => item.programId === selectedProgramId && !item.isElectiveSlot).filter((item) => {
+  const rows = useMemo(() => {
+    const catalog = [...subjects, ...electives].filter((item) => item.programId === selectedProgramId && !item.isElectiveSlot).reduce((items, subject) => {
+      const current = items.get(subject.key)
+      if (!current || (current.catalogAssignment && !subject.catalogAssignment)) items.set(subject.key, subject)
+      return items
+    }, new Map())
+
+    return [...catalog.values()].filter((item) => {
     const matchesSearch = `${item.key} ${item.name}`.toLowerCase().includes(search.toLowerCase())
     const matchesFlag = !filters.flag || (filters.flag === 'capstone' && item.capstone) || (filters.flag === 'practice' && item.practice) || (filters.flag === 'core' && item.core)
     return matchesSearch && (!filters.type || item.type === filters.type) && (!filters.area || item.area === filters.area) && (!filters.cycle || String(item.cycle) === filters.cycle) && (!filters.modality || item.modality === filters.modality) && matchesFlag
-  }).sort((a, b) => String(a[sort]).localeCompare(String(b[sort]), 'es', { numeric: true })), [subjects, selectedProgramId, search, filters, sort])
+    }).sort((a, b) => String(a[sort]).localeCompare(String(b[sort]), 'es', { numeric: true }))
+  }, [subjects, electives, selectedProgramId, search, filters, sort])
   const setFilter = (key, value) => setFilters((current) => ({ ...current, [key]: value }))
   const selectProgram = (id) => {
     setSelectedProgramId(id)
@@ -48,13 +56,6 @@ export default function CatalogTable({ programs, subjects, institutional, onSele
         </div>
         <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3"><p className="text-[10px] text-slate-500">{selectedProgram ? `Mostrando ${rows.length} asignaturas de ${selectedProgram.shortName || selectedProgram.name}` : 'Selecciona una carrera para comenzar'}</p><button type="button" disabled={!selectedProgram} onClick={() => { setSearch(''); setFilters({ type: '', area: '', cycle: '', modality: '', flag: '' }) }} className="text-[10px] font-bold text-blue-700 disabled:cursor-not-allowed disabled:opacity-40">Limpiar filtros</button></div>
       </section>
-
-      {selectedProgram && <section className="mt-6 overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-3 bg-[#FFF8E5] px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex items-center gap-2"><span className="grid h-8 w-8 place-items-center rounded-lg bg-[#A6192E] text-white"><Icon name="school" size={16} /></span><div><h3 className="text-sm font-bold text-slate-900">Optativas institucionales</h3><p className="text-[10px] text-slate-500">Obligatorias en el catálogo de programas de licenciatura</p></div></div></div><span className="self-start rounded-full bg-white px-3 py-1 text-[10px] font-bold text-blue-700 ring-1 ring-blue-200">{institutional.length} asignaturas</span></div>
-        <div className="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-3">
-          {institutional.map((name, index) => <div key={name} className="flex items-start gap-3 border-b border-slate-100 px-4 py-3 text-[11px] text-slate-700"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-blue-50 text-[9px] font-bold text-blue-700">{String(index + 1).padStart(2, '0')}</span><span className="leading-relaxed">{name}</span></div>)}
-        </div>
-      </section>}
     </div>
   )
 }

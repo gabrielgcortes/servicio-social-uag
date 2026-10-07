@@ -26,9 +26,11 @@ export const institutionalElectives = [
   'Visualización de datos empresariales',
 ]
 
+export const initialProgramId = 'program-6b9f7e4a-69a3-4d97-a7cd-5108078964c2'
+
 export const programs = [
   {
-    id: 'lsw',
+    id: initialProgramId,
     name: 'Licenciatura en Ingeniería de Software y Minería de Datos',
     shortName: 'Ingeniería de Software y Minería de Datos',
     mnemonic: 'LSW',
@@ -139,7 +141,7 @@ export const initialSubjects = [
   subject(50, 8, 'Gestión de proyectos', { key: 'LSW050', teacherHours: 48, independentHours: 32, credits: 5, area: 'Profesional', room: 'A,L' }),
   subject(51, 8, 'Proyecto de innovación tecnológica II', { key: 'LSW051', prerequisite: 'LSW034', teacherHours: 32, independentHours: 32, credits: 4, area: 'Profesional', room: 'A,L' }),
   subject(52, 8, 'Prácticas profesionales 2', { key: 'LSW052', teacherHours: 16, independentHours: 224, credits: 15, room: 'O', area: 'Profesional', practice: true }),
-].map((subject) => ({ ...subject, programId: 'lsw' }))
+].map((subject) => ({ ...subject, programId: initialProgramId }))
 
 export const ownElectives = [
   subject(53, 7, 'Análisis y diseño de sistemas con big data', { key: 'LSW053', type: 'Optativa', teacherHours: 48, independentHours: 48, credits: 6, area: 'Profesional', room: 'A,L' }),
@@ -167,7 +169,7 @@ export const ownElectives = [
   subject(75, 7, 'Python para análisis de datos', { key: 'LSW075', type: 'Optativa', teacherHours: 64, independentHours: 80, credits: 9, area: 'Profesional' }),
   subject(76, 7, 'Toma de decisiones con análisis de datos', { key: 'LSW076', type: 'Optativa', teacherHours: 64, independentHours: 80, credits: 9, area: 'Profesional' }),
   subject(77, 7, 'Visualización de datos empresariales', { key: 'LSW077', type: 'Optativa', teacherHours: 64, independentHours: 80, credits: 9, area: 'Profesional' }),
-]
+].map((subject) => ({ ...subject, programId: initialProgramId }))
 
 export const initialMockValidations = []
 

@@ -11,7 +11,7 @@ import ConfigPage from './pages/ConfigPage'
 import ExportModal from './components/ExportModal'
 import ExportsPage from './pages/ExportsPage'
 import Toast from './components/Toast'
-import { initialMockValidations, initialSubjects, institutionalElectives, ownElectives, programs as demoPrograms } from './data/mockData'
+import { initialMockValidations, initialProgramId, initialSubjects, ownElectives, programs as demoPrograms } from './data/mockData'
 import { createMissingDeanerySubjects } from './data/deaneryRequirements'
 import { validateCurriculum } from './utils/validation'
 
@@ -39,6 +39,15 @@ function getHeaderMeta(pathname) {
 
 function belongsToProgram(subject, programId) {
   return (subject.ownerProgramId ?? subject.programId) === programId
+}
+
+function createProgramId() {
+  if (globalThis.crypto?.randomUUID) return `program-${globalThis.crypto.randomUUID()}`
+  return `program-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+function assignLegacyElectiveOwnership(electives) {
+  return electives.map((elective) => elective.programId ? elective : { ...elective, programId: initialProgramId })
 }
 
 function EditProgramWrapper({ programs, onSave, onCancel }) {
@@ -77,7 +86,7 @@ function MapPageWrapper({
   const programSubjects = subjects.filter((subject) => subject.programId === program?.id)
   const availableSubjects = [
     ...subjects.filter((subject) => !subject.isElectiveSlot && belongsToProgram(subject, program?.id)),
-    ...electives,
+    ...electives.filter((subject) => (subject.programId || initialProgramId) === program?.id),
   ]
 
   useEffect(() => {
@@ -121,7 +130,7 @@ function App() {
   const [programs, setPrograms] = useState(demoPrograms)
   const [activeProgram, setActiveProgram] = useState(demoPrograms[0])
   const [subjects, setSubjects] = useState(initialSubjects)
-  const [electives, setElectives] = useState(ownElectives)
+  const [electives, setElectives] = useState(() => assignLegacyElectiveOwnership(ownElectives))
   const [menuOpen, setMenuOpen] = useState(false)
   const [sidebarVisible, setSidebarVisible] = useState(true)
   const [subjectModal, setSubjectModal] = useState(null)
@@ -175,7 +184,7 @@ function App() {
       if (activeProgram?.id === savedProgram.id) setActiveProgram(savedProgram)
     } else {
       savedProgram = {
-        id: `demo-${Date.now()}`,
+        id: createProgramId(),
         shortName: form.name.replace(/^(Licenciatura|Maestría|Especialidad|Doctorado) en /, ''),
         plan: form.code,
         version: 'v0.1',
@@ -202,8 +211,9 @@ function App() {
     if (subjectModal.source === 'catalog') {
       const exists = electives.some((item) => item.id === saved.id)
       if (exists || saved.type === 'Optativa') {
+        const savedForProgram = { ...saved, programId: activeProgram?.id }
         setElectives((items) =>
-          exists ? items.map((item) => (item.id === saved.id ? saved : item)) : [...items, saved]
+          exists ? items.map((item) => (item.id === saved.id ? savedForProgram : item)) : [...items, savedForProgram]
         )
       } else {
         setSubjects((items) =>
@@ -259,7 +269,7 @@ function App() {
 
     const source = [
       ...subjects.filter((item) => belongsToProgram(item, activeProgram.id)),
-      ...electives,
+      ...electives.filter((item) => (item.programId || initialProgramId) === activeProgram.id),
     ].find((item) => item.key === key)
     if (!source) return
 
@@ -396,7 +406,7 @@ function App() {
               <MapPageWrapper
                 programs={programs}
                 subjects={subjects}
-                electives={electives}
+                electives={assignLegacyElectiveOwnership(electives)}
                 onSetActiveProgram={setActiveProgram}
                 onAddSubject={(cycle) => setSubjectModal({ subject: null, cycle, source: 'map' })}
                 onEditSubject={(subject) =>
@@ -418,7 +428,7 @@ function App() {
               <CatalogTable
                 programs={programs}
                 subjects={subjects}
-                institutional={institutionalElectives}
+                electives={electives}
                 onSelectProgram={setActiveProgram}
                 onEdit={(subject) =>
                   setSubjectModal({ subject, cycle: subject?.cycle || 7, source: 'catalog' })
@@ -441,7 +451,10 @@ function App() {
           subject={subjectModal.subject}
           cycle={subjectModal.cycle || 1}
           program={activeProgram}
-          subjects={[...subjects.filter((subject) => subject.programId === activeProgram?.id), ...electives]}
+          subjects={[
+            ...subjects.filter((subject) => subject.programId === activeProgram?.id),
+            ...electives.filter((subject) => (subject.programId || initialProgramId) === activeProgram?.id),
+          ]}
           onClose={() => setSubjectModal(null)}
           onSave={saveSubject}
         />
