@@ -5,7 +5,6 @@ const normalizeSearch = (value) => String(value).normalize('NFD').replace(/\p{Di
 
 export default function UnassignedSubjectsPanel({ assignedSubjects, availableSubjects, onClose, onUnassign, fullHeight = false }) {
   const [search, setSearch] = useState('')
-  const [type, setType] = useState('')
   const [isDropTarget, setIsDropTarget] = useState(false)
 
   const subjects = useMemo(() => {
@@ -18,10 +17,10 @@ export default function UnassignedSubjectsPanel({ assignedSubjects, availableSub
 
     return [...catalog.values()]
       .filter((subject) => !assignedKeys.has(subject.key))
-      .filter((subject) => !type || subject.type === type)
+      .filter((subject) => subject.type !== 'Optativa' && !subject.isElectiveSlot)
       .filter((subject) => normalizeSearch(subject.name).includes(normalizeSearch(search.trim())))
       .sort((a, b) => Number(Boolean(b.core)) - Number(Boolean(a.core)) || a.name.localeCompare(b.name, 'es'))
-  }, [assignedSubjects, availableSubjects, search, type])
+  }, [assignedSubjects, availableSubjects, search])
 
   const handleDragOver = (event) => {
     event.preventDefault()
@@ -48,7 +47,6 @@ export default function UnassignedSubjectsPanel({ assignedSubjects, availableSub
         </div>
 
         <label className="relative mt-3 block"><Icon name="search" size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 text-[11px] outline-none transition focus:border-blue-400 focus:bg-white" placeholder="Buscar materia..." /></label>
-        <label className="relative mt-2 block"><select value={type} onChange={(event) => setType(event.target.value)} className="h-9 w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-8 text-[11px] font-medium text-slate-600 outline-none focus:border-blue-400"><option value="">Todos los tipos</option><option value="Obligatoria">Obligatorias</option><option value="Optativa">Optativas</option></select><Icon name="chevronDown" size={13} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" /></label>
       </div>
 
       <div className={`min-h-32 overflow-y-auto overscroll-contain p-2 ${fullHeight ? 'min-h-0 flex-1' : 'max-h-[calc(100vh-330px)]'}`}>

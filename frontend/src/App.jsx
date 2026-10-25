@@ -69,7 +69,6 @@ function EditProgramWrapper({ programs, onSave, onCancel }) {
 function MapPageWrapper({
   programs,
   subjects,
-  electives,
   onSetActiveProgram,
   onAddSubject,
   onEditSubject,
@@ -85,8 +84,7 @@ function MapPageWrapper({
   const program = programs.find((item) => item.id === id) || programs[0]
   const programSubjects = subjects.filter((subject) => subject.programId === program?.id)
   const availableSubjects = [
-    ...subjects.filter((subject) => !subject.isElectiveSlot && belongsToProgram(subject, program?.id)),
-    ...electives.filter((subject) => (subject.programId || initialProgramId) === program?.id),
+    ...subjects.filter((subject) => !subject.isElectiveSlot && subject.type !== 'Optativa' && belongsToProgram(subject, program?.id)),
   ]
 
   useEffect(() => {
@@ -208,6 +206,15 @@ function App() {
   }
 
   const saveSubject = (saved) => {
+    if (subjectModal.source === 'map' && saved.type === 'Optativa' && !saved.isElectiveSlot) {
+      setToast('Las materias optativas se administran en el catálogo; en el mapa agrega un espacio optativo.')
+      return
+    }
+    if (subjectModal.source === 'catalog' && saved.isElectiveSlot) {
+      setToast('Los espacios optativos se administran exclusivamente desde el mapa curricular.')
+      return
+    }
+
     if (subjectModal.source === 'catalog') {
       const exists = electives.some((item) => item.id === saved.id)
       if (exists || saved.type === 'Optativa') {
@@ -267,10 +274,9 @@ function App() {
   const assignSubject = (key, cycle) => {
     if (!activeProgram) return
 
-    const source = [
-      ...subjects.filter((item) => belongsToProgram(item, activeProgram.id)),
-      ...electives.filter((item) => (item.programId || initialProgramId) === activeProgram.id),
-    ].find((item) => item.key === key)
+    const source = subjects
+      .filter((item) => !item.isElectiveSlot && item.type !== 'Optativa' && belongsToProgram(item, activeProgram.id))
+      .find((item) => item.key === key)
     if (!source) return
 
     setSubjects((items) => {
@@ -406,7 +412,6 @@ function App() {
               <MapPageWrapper
                 programs={programs}
                 subjects={subjects}
-                electives={assignLegacyElectiveOwnership(electives)}
                 onSetActiveProgram={setActiveProgram}
                 onAddSubject={(cycle) => setSubjectModal({ subject: null, cycle, source: 'map' })}
                 onEditSubject={(subject) =>
@@ -451,6 +456,7 @@ function App() {
           subject={subjectModal.subject}
           cycle={subjectModal.cycle || 1}
           program={activeProgram}
+          source={subjectModal.source}
           subjects={[
             ...subjects.filter((subject) => subject.programId === activeProgram?.id),
             ...electives.filter((subject) => (subject.programId || initialProgramId) === activeProgram?.id),

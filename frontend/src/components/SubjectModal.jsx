@@ -10,7 +10,8 @@ const empty = {
   substantial: false, capstone: false, practice: false, core: false, isElectiveSlot: false,
 }
 
-export default function SubjectModal({ open, subject, cycle, program, subjects, onClose, onSave }) {
+export default function SubjectModal({ open, subject, cycle, program, source = 'map', subjects, onClose, onSave }) {
+  const isMapContext = source === 'map'
   const [form, setForm] = useState(() => subject
     ? { ...empty, ...subject, prerequisite: subject.prerequisite || '' }
     : { ...empty, cycle, modality: program.modality, area: areasByLevel[program.level]?.[0] || 'Disciplinar' })
@@ -49,7 +50,7 @@ export default function SubjectModal({ open, subject, cycle, program, subjects, 
         </header>
 
         <div className="overflow-y-auto px-5 py-5 sm:px-6">
-          {!subject && <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1"><button type="button" onClick={() => { set('isElectiveSlot', false); set('type', 'Obligatoria') }} className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${!form.isElectiveSlot ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>Asignatura del catálogo</button><button type="button" onClick={() => { set('isElectiveSlot', true); set('type', 'Optativa'); set('name', 'Optativa de formación profesional') }} className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${form.isElectiveSlot ? 'bg-white text-amber-800 shadow-sm' : 'text-slate-500'}`}>Espacio optativo</button></div>}
+          {!subject && isMapContext && <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1"><button type="button" onClick={() => { set('isElectiveSlot', false); set('type', 'Obligatoria') }} className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${!form.isElectiveSlot ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>Asignatura obligatoria</button><button type="button" onClick={() => { set('isElectiveSlot', true); set('type', 'Optativa'); set('name', 'Optativa de formación profesional') }} className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${form.isElectiveSlot ? 'bg-white text-amber-800 shadow-sm' : 'text-slate-500'}`}>Espacio optativo</button></div>}
 
           <div className="grid gap-5 lg:grid-cols-[1fr_240px]">
             <div className="space-y-5">
@@ -58,7 +59,7 @@ export default function SubjectModal({ open, subject, cycle, program, subjects, 
                   <Field label="Clave generada" hint="Solo lectura"><div className="mt-1.5 flex h-10 items-center rounded-xl border border-blue-200 bg-blue-50 px-3 font-mono text-sm font-bold text-blue-800">{previewKey}</div></Field>
                   <Field label="Ciclo"><select value={form.cycle || cycle} onChange={(e) => set('cycle', Number(e.target.value))} className={inputClass}>{Array.from({ length: program.cycles }, (_, index) => index + 1).map((item) => <option key={item} value={item}>{program.cycleLabel} {item}</option>)}</select></Field>
                   <div className="sm:col-span-2"><Field label={form.isElectiveSlot ? 'Nombre del espacio' : 'Nombre de la asignatura'}><input autoFocus value={form.name} onChange={(e) => set('name', e.target.value)} className={inputClass} placeholder="Formato oración, ej. Proyecto de innovación tecnológica" /></Field></div>
-                  <Field label="Tipo"><select disabled={form.isElectiveSlot} value={form.type} onChange={(e) => set('type', e.target.value)} className={inputClass}><option>Obligatoria</option><option>Optativa</option></select></Field>
+                  <Field label="Tipo"><select disabled={form.isElectiveSlot || isMapContext} value={form.type} onChange={(e) => set('type', e.target.value)} className={inputClass}><option>Obligatoria</option>{!isMapContext && <option>Optativa</option>}</select></Field>
                   <Field label="Área de formación"><select value={form.area} onChange={(e) => set('area', e.target.value)} className={inputClass}>{(areasByLevel[program.level] || areasByLevel.Licenciatura).map((area) => <option key={area}>{area}</option>)}</select></Field>
                 </div>
               </section>
