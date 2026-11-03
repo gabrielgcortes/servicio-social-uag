@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Icon from './Icon'
 import SubjectCard from './SubjectCard'
+import { cycleStatus, isCycleEditable } from '../utils/cycleStatus'
 
 export default function CycleColumn({
   cycle,
@@ -20,8 +21,11 @@ export default function CycleColumn({
   const [isColumnOver, setIsColumnOver] = useState(false)
   const credits = subjects.reduce((sum, item) => sum + Number(item.credits || 0), 0)
   const exceeded = credits > program.maxCycleCredits || subjects.length > program.maxSubjects
+  const editable = isCycleEditable(program, cycle)
+  const status = cycleStatus(program, cycle)
 
   const handleDragOver = (e) => {
+    if (!editable) return
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
     if (!isColumnOver) setIsColumnOver(true)
@@ -34,6 +38,7 @@ export default function CycleColumn({
   }
 
   const handleDrop = (e) => {
+    if (!editable) return
     e.preventDefault()
     setIsColumnOver(false)
     const [source, id] = e.dataTransfer.getData('text/plain').split(':')
@@ -59,8 +64,8 @@ export default function CycleColumn({
     >
       <header className={`border-b p-3.5 ${exceeded ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white'}`}>
         <div className="flex items-start justify-between gap-3">
-          <div><p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">{program.cycleLabel}</p><h3 className="mt-0.5 text-sm font-bold text-slate-900">{cycleName(cycle)}</h3></div>
-          <button type="button" onClick={() => onAdd(cycle)} aria-label={`Añadir al ciclo ${cycle}`} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-[#A6192E] shadow-sm transition hover:border-blue-300 hover:bg-blue-50"><Icon name="plus" size={15} /></button>
+          <div><p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">{program.cycleLabel}</p><h3 className="mt-0.5 text-sm font-bold text-slate-900">{cycleName(cycle)}</h3><p className="mt-1 text-[10px] font-semibold text-slate-500">{status === 'future' ? 'Futuro · editable' : status === 'current' ? 'En curso · bloqueado' : 'Terminado · bloqueado'}</p></div>
+          {editable && <button type="button" onClick={() => onAdd(cycle)} aria-label={`Añadir al ciclo ${cycle}`} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-[#A6192E] shadow-sm transition hover:border-blue-300 hover:bg-blue-50"><Icon name="plus" size={15} /></button>}
         </div>
         <div className="mt-3 flex items-center gap-3 text-[10px] font-medium text-slate-500">
           <span className="flex items-center gap-1"><Icon name="book" size={12} /> {subjects.length}/{program.maxSubjects} materias</span>
@@ -74,6 +79,8 @@ export default function CycleColumn({
             key={subject.id}
             subject={subject}
             totalCycles={program.cycles}
+            program={program}
+            editable={editable}
             isDragging={draggedSubjectId === subject.id}
             draggedSubjectId={draggedSubjectId}
             onDragStart={onDragStart}
@@ -87,7 +94,7 @@ export default function CycleColumn({
           />
         ))}
 
-        {draggedSubjectId && !isDraggingSource && (
+        {editable && draggedSubjectId && !isDraggingSource && (
           <div
             className={`flex items-center justify-center rounded-xl border-2 border-dashed py-3 transition-colors ${
               isColumnOver
@@ -99,7 +106,7 @@ export default function CycleColumn({
           </div>
         )}
 
-        <button type="button" onClick={() => onAdd(cycle)} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-300 bg-white/50 py-2.5 text-[10px] font-semibold text-slate-500 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"><Icon name="plus" size={13} /> Añadir elemento</button>
+        {editable && <button type="button" onClick={() => onAdd(cycle)} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-300 bg-white/50 py-2.5 text-[10px] font-semibold text-slate-500 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"><Icon name="plus" size={13} /> Añadir elemento</button>}
       </div>
     </section>
   )

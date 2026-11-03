@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import CycleColumn from './CycleColumn'
 import SubjectCard from './SubjectCard'
+import { isCycleEditable } from '../utils/cycleStatus'
 
 export default function CurriculumMap({ view, subjects, program, onAdd, onEdit, onMove, onReorder, onRemove, onAssign, onDropSubject }) {
   const [draggedSubjectId, setDraggedSubjectId] = useState(null)
@@ -43,6 +44,8 @@ export default function CurriculumMap({ view, subjects, program, onAdd, onEdit, 
                     key={subject.id}
                     subject={subject}
                     totalCycles={program.cycles}
+                    program={program}
+                    editable={isCycleEditable(program, subject.cycle)}
                     onEdit={onEdit}
                     onMove={onMove}
                     onReorder={onReorder}

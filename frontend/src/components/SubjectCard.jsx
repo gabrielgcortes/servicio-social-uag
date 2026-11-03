@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Icon from './Icon'
+import { isCycleEditable } from '../utils/cycleStatus'
 
 const areaColor = {
   Universitaria: 'bg-violet-100 text-violet-700',
@@ -12,6 +13,8 @@ const areaColor = {
 export default function SubjectCard({
   subject,
   totalCycles,
+  program,
+  editable = true,
   isDragging,
   draggedSubjectId,
   onDragStart,
@@ -39,6 +42,7 @@ export default function SubjectCard({
   }
 
   const handleDragOver = (e) => {
+    if (!editable) return
     if (draggedSubjectId && String(draggedSubjectId) === String(subject.id)) return
     e.preventDefault()
     e.stopPropagation()
@@ -56,6 +60,7 @@ export default function SubjectCard({
   }
 
   const handleDrop = (e) => {
+    if (!editable) return
     const [source, id] = e.dataTransfer.getData('text/plain').split(':')
     if (!id || (source === 'map' && String(id) === String(subject.id))) return
     e.preventDefault()
@@ -71,7 +76,7 @@ export default function SubjectCard({
 
   return (
     <article
-      draggable={true}
+      draggable={editable}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragOver={handleDragOver}
@@ -95,19 +100,19 @@ export default function SubjectCard({
 
       <div
         role="button"
-        tabIndex={0}
-        onClick={() => onEdit(subject)}
-        onKeyDown={(e) => { if (e.key === 'Enter') onEdit(subject) }}
+        tabIndex={editable ? 0 : -1}
+        onClick={() => editable && onEdit(subject)}
+        onKeyDown={(e) => { if (editable && e.key === 'Enter') onEdit(subject) }}
         className="block w-full text-left focus:outline-none cursor-pointer"
-        aria-label={`Editar ${subject.name}`}
+        aria-label={editable ? `Editar ${subject.name}` : `${subject.name}, ciclo bloqueado`}
       >
         <div className="flex items-start gap-2">
           <span className={`rounded-md px-1.5 py-0.5 font-mono text-[9px] font-bold ${elective ? 'bg-amber-200/60 text-amber-800' : 'bg-slate-100 text-slate-600'}`}>{subject.key || 'SIN CLAVE'}</span>
           {subject.prerequisite && <span className="rounded-md bg-blue-50 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-blue-700">← {subject.prerequisite}</span>}
           <span className="ml-auto text-[9px] font-semibold text-slate-400">{subject.type}</span>
-          <span className="text-slate-300 group-hover:text-slate-500 cursor-grab active:cursor-grabbing transition" title="Arrastra para mover de ciclo o reordenar">
+          {editable && <span className="text-slate-300 group-hover:text-slate-500 cursor-grab active:cursor-grabbing transition" title="Arrastra para mover de ciclo o reordenar">
             <Icon name="grip" size={13} />
-          </span>
+          </span>}
         </div>
         <h4 className="mt-2.5 min-h-[34px] text-[11px] font-bold leading-[1.45] text-slate-800">{subject.name}</h4>
         <div className="mt-2 flex flex-wrap gap-1">
@@ -124,7 +129,7 @@ export default function SubjectCard({
           <Metric label="AULA" value={subject.room} />
         </div>
       </div>
-      <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2">
+      {editable && <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2">
         <div className="flex gap-0.5">
           <button type="button" onClick={(e) => { e.stopPropagation(); onReorder(subject.id, -1); }} aria-label="Mover arriba" className="grid h-6 w-6 place-items-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700"><Icon name="arrowUp" size={12} /></button>
           <button type="button" onClick={(e) => { e.stopPropagation(); onReorder(subject.id, 1); }} aria-label="Mover abajo" className="grid h-6 w-6 place-items-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700"><Icon name="arrowDown" size={12} /></button>
@@ -132,11 +137,11 @@ export default function SubjectCard({
         <div className="flex items-center gap-1">
           <div className="relative">
             <button type="button" onClick={(e) => { e.stopPropagation(); setMenu((value) => !value); }} className="flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-semibold text-slate-500 hover:bg-slate-100"><Icon name="move" size={11} /> Mover</button>
-            {menu && <div className="absolute bottom-7 right-0 z-20 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-xl"><p className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-slate-400">Mover a ciclo</p>{Array.from({ length: totalCycles }, (_, index) => index + 1).map((cycle) => <button key={cycle} type="button" disabled={cycle === subject.cycle} onClick={(e) => { e.stopPropagation(); onMove(subject.id, cycle); setMenu(false); }} className="block w-full rounded-lg px-2 py-1.5 text-left text-[10px] text-slate-600 hover:bg-blue-50 disabled:opacity-30">Ciclo {cycle}</button>)}</div>}
+            {menu && <div className="absolute bottom-7 right-0 z-20 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-xl"><p className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-slate-400">Mover a ciclo</p>{Array.from({ length: totalCycles }, (_, index) => index + 1).map((cycle) => <button key={cycle} type="button" disabled={cycle === subject.cycle || !isCycleEditable(program, cycle)} onClick={(e) => { e.stopPropagation(); onMove(subject.id, cycle); setMenu(false); }} className="block w-full rounded-lg px-2 py-1.5 text-left text-[10px] text-slate-600 hover:bg-blue-50 disabled:opacity-30">Ciclo {cycle}</button>)}</div>}
           </div>
           {!elective && <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(subject.id); }} aria-label={`Quitar ${subject.name} del mapa`} title="Quitar del mapa" className="grid h-6 w-6 place-items-center rounded text-slate-400 transition hover:bg-red-50 hover:text-red-600"><Icon name="x" size={13} /></button>}
         </div>
-      </div>
+      </div>}
     </article>
   )
 }

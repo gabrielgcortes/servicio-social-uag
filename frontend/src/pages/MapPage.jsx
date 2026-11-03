@@ -24,6 +24,7 @@ export default function MapPage({ program, subjects, availableSubjects, validati
             <div className="flex flex-wrap items-center gap-2"><span className="rounded-md bg-blue-50 px-2 py-1 font-mono text-[10px] font-bold text-blue-700">{program.mnemonic}</span><span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700 ring-1 ring-amber-200">{program.status}</span><span className="text-xs text-slate-400">{program.plan} · {program.version}</span></div>
             <h2 className="mt-2 truncate text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">{program.name}</h2>
             <p className="mt-1 text-xs text-slate-500">{program.modality} · {program.deanery} · {program.jurisdiction}</p>
+            <p className="mt-2 text-xs text-slate-500">Estado simulado: {program.currentCycle ? `${program.cycleLabel} ${program.currentCycle} en curso` : 'el programa aún no inicia'}. Solo se pueden modificar ciclos futuros.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => onNotify('Versión duplicada como borrador v2.4.')} className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"><Icon name="copy" size={14} /> Duplicar versión</button>

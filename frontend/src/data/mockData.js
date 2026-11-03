@@ -45,6 +45,7 @@ export const programs = [
     updated: 'Actualizado',
     cycleLabel: 'Semestre',
     cycles: 8,
+    currentCycle: 4, // Estado simulado para probar ciclos terminados, en curso y futuros.
     weeks: 16,
     minCredits: 300,
     maxCredits: 400,

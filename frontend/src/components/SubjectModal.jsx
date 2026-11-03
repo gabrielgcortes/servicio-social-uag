@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Icon from './Icon'
 import { areasByLevel } from '../data/mockData'
+import { isCycleEditable } from '../utils/cycleStatus'
 
 const inputClass = 'mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50'
 
@@ -57,7 +58,7 @@ export default function SubjectModal({ open, subject, cycle, program, source = '
               <section className="rounded-2xl border border-slate-200 p-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Clave generada" hint="Solo lectura"><div className="mt-1.5 flex h-10 items-center rounded-xl border border-blue-200 bg-blue-50 px-3 font-mono text-sm font-bold text-blue-800">{previewKey}</div></Field>
-                  <Field label="Ciclo"><select value={form.cycle || cycle} onChange={(e) => set('cycle', Number(e.target.value))} className={inputClass}>{Array.from({ length: program.cycles }, (_, index) => index + 1).map((item) => <option key={item} value={item}>{program.cycleLabel} {item}</option>)}</select></Field>
+                  <Field label="Ciclo"><select value={form.cycle || cycle} onChange={(e) => set('cycle', Number(e.target.value))} className={inputClass}>{Array.from({ length: program.cycles }, (_, index) => index + 1).map((item) => <option key={item} value={item} disabled={isMapContext && !isCycleEditable(program, item)}>{program.cycleLabel} {item}</option>)}</select></Field>
                   <div className="sm:col-span-2"><Field label={form.isElectiveSlot ? 'Nombre del espacio' : 'Nombre de la asignatura'}><input autoFocus value={form.name} onChange={(e) => set('name', e.target.value)} className={inputClass} placeholder="Formato oración, ej. Proyecto de innovación tecnológica" /></Field></div>
                   <Field label="Tipo"><select disabled={form.isElectiveSlot || isMapContext} value={form.type} onChange={(e) => set('type', e.target.value)} className={inputClass}><option>Obligatoria</option>{!isMapContext && <option>Optativa</option>}</select></Field>
                   <Field label="Área de formación"><select value={form.area} onChange={(e) => set('area', e.target.value)} className={inputClass}>{(areasByLevel[program.level] || areasByLevel.Licenciatura).map((area) => <option key={area}>{area}</option>)}</select></Field>

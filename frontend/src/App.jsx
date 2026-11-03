@@ -14,6 +14,7 @@ import Toast from './components/Toast'
 import { initialMockValidations, initialProgramId, initialSubjects, ownElectives, programs as demoPrograms } from './data/mockData'
 import { createMissingDeanerySubjects } from './data/deaneryRequirements'
 import { validateCurriculum } from './utils/validation'
+import { isCycleEditable } from './utils/cycleStatus'
 
 function getHeaderMeta(pathname) {
   if (pathname.startsWith('/programas/nuevo')) {
@@ -190,6 +191,7 @@ function App() {
         progress: 12,
         updated: 'Ahora',
         cycleLabel: form.level === 'Licenciatura' ? 'Semestre' : 'Cuatrimestre',
+        currentCycle: 0,
         accent: 'from-blue-600 to-amber-500',
         ...form,
       }
@@ -206,6 +208,12 @@ function App() {
   }
 
   const saveSubject = (saved) => {
+    const original = subjects.find((item) => item.id === saved.id && item.programId === activeProgram?.id)
+    if ((original && !isCycleEditable(activeProgram, original.cycle)) ||
+        ((subjectModal.source === 'map' || original) && !isCycleEditable(activeProgram, saved.cycle))) {
+      setToast('Solo se pueden modificar ciclos futuros.')
+      return
+    }
     if (subjectModal.source === 'map' && saved.type === 'Optativa' && !saved.isElectiveSlot) {
       setToast('Las materias optativas se administran en el catálogo; en el mapa agrega un espacio optativo.')
       return
@@ -242,11 +250,17 @@ function App() {
 
   const moveSubject = (id, cycle) => {
     const moved = subjects.find((item) => item.id === id)
+    if (!moved || !isCycleEditable(activeProgram, moved.cycle) || !isCycleEditable(activeProgram, cycle)) {
+      setToast('Solo se pueden mover materias entre ciclos futuros.')
+      return
+    }
     setSubjects((items) => items.map((item) => (item.id === id ? { ...item, cycle } : item)))
     setToast(`${moved?.name || 'La asignatura'} se movió al ciclo ${cycle}.`)
   }
 
   const reorderSubject = (id, direction) => {
+    const subject = subjects.find((item) => item.id === id)
+    if (!subject || !isCycleEditable(activeProgram, subject.cycle)) return
     setSubjects((items) => {
       const current = items.find((item) => item.id === id)
       const sameCycle = items.filter((item) => item.programId === current.programId && item.cycle === current.cycle)
@@ -264,6 +278,10 @@ function App() {
   const removeSubject = (id) => {
     const removed = subjects.find((item) => String(item.id) === String(id))
     if (!removed) return
+    if (!isCycleEditable(activeProgram, removed.cycle)) {
+      setToast('Solo se pueden modificar ciclos futuros.')
+      return
+    }
     setSubjects((items) => removed.catalogAssignment
       ? items.filter((item) => String(item.id) !== String(id))
       : items.map((item) => (String(item.id) === String(id) ? { ...item, programId: null, ownerProgramId: item.ownerProgramId || removed.programId } : item))
@@ -273,6 +291,10 @@ function App() {
 
   const assignSubject = (key, cycle) => {
     if (!activeProgram) return
+    if (!isCycleEditable(activeProgram, cycle)) {
+      setToast('Solo se pueden asignar materias a ciclos futuros.')
+      return
+    }
 
     const source = subjects
       .filter((item) => !item.isElectiveSlot && item.type !== 'Optativa' && belongsToProgram(item, activeProgram.id))
@@ -300,6 +322,11 @@ function App() {
     const numericTargetCycle = Number(targetCycle)
     const strSubjectId = String(subjectId)
     const strTargetSubjectId = targetSubjectId ? String(targetSubjectId) : null
+    const sourceSubject = subjects.find((item) => String(item.id) === strSubjectId)
+    if (!sourceSubject || !isCycleEditable(activeProgram, sourceSubject.cycle) || !isCycleEditable(activeProgram, numericTargetCycle)) {
+      setToast('Solo se pueden mover materias entre ciclos futuros.')
+      return
+    }
 
     setSubjects((items) => {
       const subjectToMove = items.find((s) => String(s.id) === strSubjectId)
@@ -413,10 +440,8 @@ function App() {
                 programs={programs}
                 subjects={subjects}
                 onSetActiveProgram={setActiveProgram}
-                onAddSubject={(cycle) => setSubjectModal({ subject: null, cycle, source: 'map' })}
-                onEditSubject={(subject) =>
-                  setSubjectModal({ subject, cycle: subject.cycle, source: 'map' })
-                }
+                onAddSubject={(cycle) => isCycleEditable(activeProgram, cycle) && setSubjectModal({ subject: null, cycle, source: 'map' })}
+                onEditSubject={(subject) => isCycleEditable(activeProgram, subject.cycle) && setSubjectModal({ subject, cycle: subject.cycle, source: 'map' })}
                 onMoveSubject={moveSubject}
                 onReorderSubject={reorderSubject}
                 onRemoveSubject={removeSubject}
@@ -435,9 +460,13 @@ function App() {
                 subjects={subjects}
                 electives={electives}
                 onSelectProgram={setActiveProgram}
-                onEdit={(subject) =>
+                onEdit={(subject) => {
+                  if (subject?.programId && subjects.some((item) => item.id === subject.id && item.programId) && !isCycleEditable(activeProgram, subject.cycle)) {
+                    setToast('Solo se pueden modificar ciclos futuros.')
+                    return
+                  }
                   setSubjectModal({ subject, cycle: subject?.cycle || 7, source: 'catalog' })
-                }
+                }}
               />
             }
           />
