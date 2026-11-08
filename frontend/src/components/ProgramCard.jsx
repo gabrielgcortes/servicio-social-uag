@@ -1,10 +1,6 @@
 import Icon from './Icon'
 
-const statusStyles = {
-  Vigente: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-  Borrador: 'bg-amber-50 text-amber-700 ring-amber-200',
-  'En revisión': 'bg-blue-50 text-blue-700 ring-blue-200',
-}
+import { statusStyles } from '../utils/planStatus'
 
 export default function ProgramCard({ program, onOpen, onEdit, onDuplicate }) {
   const progressColor = program.progress >= 90 ? 'bg-emerald-500' : program.progress >= 75 ? 'bg-blue-600' : 'bg-amber-500'

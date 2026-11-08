@@ -3,7 +3,7 @@ import Icon from './Icon'
 
 const normalizeSearch = (value) => String(value).normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase('es-MX')
 
-export default function UnassignedSubjectsPanel({ assignedSubjects, availableSubjects, onClose, onUnassign, fullHeight = false }) {
+export default function UnassignedSubjectsPanel({ assignedSubjects, availableSubjects, onClose, onUnassign, fullHeight = false, isReadOnly = false }) {
   const [search, setSearch] = useState('')
   const [isDropTarget, setIsDropTarget] = useState(false)
 
@@ -23,12 +23,14 @@ export default function UnassignedSubjectsPanel({ assignedSubjects, availableSub
   }, [assignedSubjects, availableSubjects, search])
 
   const handleDragOver = (event) => {
+    if (isReadOnly) return
     event.preventDefault()
     event.dataTransfer.dropEffect = 'move'
     setIsDropTarget(true)
   }
 
   const handleDrop = (event) => {
+    if (isReadOnly) return
     event.preventDefault()
     setIsDropTarget(false)
     const [source, id] = event.dataTransfer.getData('text/plain').split(':')
@@ -53,7 +55,7 @@ export default function UnassignedSubjectsPanel({ assignedSubjects, availableSub
         <p className="px-2 py-1.5 text-[10px] font-semibold text-slate-400">{subjects.length} {subjects.length === 1 ? 'materia encontrada' : 'materias encontradas'}</p>
         {isDropTarget && <p className="mx-2 mb-2 rounded-lg bg-red-50 px-3 py-2 text-center text-[10px] font-semibold text-red-700">Suelta aquí para quitarla del mapa</p>}
         {subjects.length ? subjects.map((subject) => (
-          <article key={subject.key || subject.id} draggable onDragStart={(event) => { event.dataTransfer.setData('text/plain', `available:${subject.key}`); event.dataTransfer.effectAllowed = 'all' }} className="cursor-grab rounded-xl p-3 transition hover:bg-slate-50 active:cursor-grabbing">
+          <article key={subject.key || subject.id} draggable={!isReadOnly} onDragStart={(event) => { event.dataTransfer.setData('text/plain', `available:${subject.key}`); event.dataTransfer.effectAllowed = 'all' }} className="cursor-grab rounded-xl p-3 transition hover:bg-slate-50 active:cursor-grabbing">
             <div className="flex items-start gap-2"><span className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${subject.type === 'Optativa' ? 'bg-violet-500' : 'bg-blue-500'}`} /><div className="min-w-0 flex-1"><p className="text-[11px] font-semibold leading-snug text-slate-800">{subject.name}</p><div className="mt-1 flex flex-wrap items-center gap-1.5"><span className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold ${subject.type === 'Optativa' ? 'bg-violet-50 text-violet-700' : 'bg-blue-50 text-blue-700'}`}>{subject.type}</span>{subject.core && <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[8px] font-bold text-amber-700">Núcleo</span>}<span className="text-[9px] text-slate-400">{subject.credits} créditos</span><Icon name="grip" size={12} className="ml-auto text-slate-300" /></div></div></div>
           </article>
         )) : <div className="grid min-h-24 place-items-center px-5 text-center"><p className="text-[11px] leading-relaxed text-slate-400">No hay materias que coincidan con los filtros.</p></div>}

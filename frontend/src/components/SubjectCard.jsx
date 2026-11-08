@@ -29,8 +29,10 @@ export default function SubjectCard({
   const [menu, setMenu] = useState(false)
   const [dropPosition, setDropPosition] = useState(null)
   const elective = subject.isElectiveSlot
+  editable = editable && isCycleEditable(program, subject.cycle)
 
   const handleDragStart = (e) => {
+    if (!editable) { e.preventDefault(); return }
     e.dataTransfer.setData('text/plain', `map:${subject.id}`)
     e.dataTransfer.effectAllowed = 'all'
     if (onDragStart) onDragStart(subject.id)
@@ -100,11 +102,11 @@ export default function SubjectCard({
 
       <div
         role="button"
-        tabIndex={editable ? 0 : -1}
-        onClick={() => editable && onEdit(subject)}
-        onKeyDown={(e) => { if (editable && e.key === 'Enter') onEdit(subject) }}
+        tabIndex={0}
+        onClick={() => onEdit(subject)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(subject) } }}
         className="block w-full text-left focus:outline-none cursor-pointer"
-        aria-label={editable ? `Editar ${subject.name}` : `${subject.name}, ciclo bloqueado`}
+        aria-label={editable ? `Editar ${subject.name}` : `Consultar ${subject.name}, solo lectura`}
       >
         <div className="flex items-start gap-2">
           <span className={`rounded-md px-1.5 py-0.5 font-mono text-[9px] font-bold ${elective ? 'bg-amber-200/60 text-amber-800' : 'bg-slate-100 text-slate-600'}`}>{subject.key || 'SIN CLAVE'}</span>

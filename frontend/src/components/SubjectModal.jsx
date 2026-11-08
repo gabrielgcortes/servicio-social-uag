@@ -11,7 +11,7 @@ const empty = {
   substantial: false, capstone: false, practice: false, core: false, isElectiveSlot: false,
 }
 
-export default function SubjectModal({ open, subject, cycle, program, source = 'map', subjects, onClose, onSave }) {
+export default function SubjectModal({ open, subject, cycle, program, source = 'map', readOnly = false, subjects, onClose, onSave }) {
   const isMapContext = source === 'map'
   const [form, setForm] = useState(() => subject
     ? { ...empty, ...subject, prerequisite: subject.prerequisite || '' }
@@ -38,7 +38,7 @@ export default function SubjectModal({ open, subject, cycle, program, source = '
   const set = (key, value) => setForm((current) => ({ ...current, [key]: value }))
   const submit = (event) => {
     event.preventDefault()
-    if (errors.length || (optativeInvalid && !authorized)) return
+    if (readOnly || errors.length || (optativeInvalid && !authorized)) return
     onSave({ ...form, id: subject?.id || Date.now(), cycle: form.cycle || cycle, key: form.isElectiveSlot ? '' : previewKey, credits: Number(credits), prerequisite: form.prerequisite || null })
   }
 
@@ -46,11 +46,11 @@ export default function SubjectModal({ open, subject, cycle, program, source = '
     <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/40 p-0 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="subject-modal-title">
       <form onSubmit={submit} className="flex max-h-[96vh] w-full max-w-4xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-h-[92vh] sm:rounded-3xl">
         <header className="flex items-start justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
-          <div><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-blue-700">{program.cycleLabel} {form.cycle || cycle}</p><h2 id="subject-modal-title" className="mt-1 text-xl font-bold tracking-tight text-slate-950">{subject ? 'Editar asignatura' : 'Nueva asignatura'}</h2><p className="mt-1 text-xs text-slate-500">La clave y los créditos se calculan automáticamente.</p></div>
+          <div><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-blue-700">{program.cycleLabel} {form.cycle || cycle}</p><h2 id="subject-modal-title" className="mt-1 text-xl font-bold tracking-tight text-slate-950">{readOnly ? 'Consultar asignatura · Solo lectura' : subject ? 'Editar asignatura' : 'Nueva asignatura'}</h2><p className="mt-1 text-xs text-slate-500">La clave y los créditos se calculan automáticamente.</p></div>
           <button type="button" onClick={onClose} aria-label="Cerrar" className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><Icon name="x" size={17} /></button>
         </header>
 
-        <div className="overflow-y-auto px-5 py-5 sm:px-6">
+        <fieldset disabled={readOnly} className="min-h-0 min-w-0 overflow-y-auto px-5 py-5 sm:px-6">
           {!subject && isMapContext && <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1"><button type="button" onClick={() => { set('isElectiveSlot', false); set('type', 'Obligatoria') }} className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${!form.isElectiveSlot ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>Asignatura obligatoria</button><button type="button" onClick={() => { set('isElectiveSlot', true); set('type', 'Optativa'); set('name', 'Optativa de formación profesional') }} className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${form.isElectiveSlot ? 'bg-white text-amber-800 shadow-sm' : 'text-slate-500'}`}>Espacio optativo</button></div>}
 
           <div className="grid gap-5 lg:grid-cols-[1fr_240px]">
@@ -92,11 +92,11 @@ export default function SubjectModal({ open, subject, cycle, program, source = '
               <div className="mt-4 rounded-xl bg-blue-50 p-3 text-[10px] leading-relaxed text-blue-700"><strong>Fórmula:</strong><br />({form.teacherHours} + {form.independentHours}) / 16 = {credits} créditos</div>
             </aside>
           </div>
-        </div>
+        </fieldset>
 
         <footer className="flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
           <p className="hidden text-[10px] text-slate-400 sm:block">Los cambios actualizarán las validaciones del mapa.</p>
-          <div className="ml-auto flex gap-2"><button type="button" onClick={onClose} className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button><button type="submit" className="flex h-10 items-center gap-2 rounded-xl bg-[#A6192E] px-4 text-sm font-semibold text-white hover:bg-[#841424]"><Icon name="save" size={15} /> Guardar</button></div>
+          <div className="ml-auto flex gap-2"><button type="button" onClick={onClose} className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50">{readOnly ? 'Cerrar' : 'Cancelar'}</button>{!readOnly && <button type="submit" className="flex h-10 items-center gap-2 rounded-xl bg-[#A6192E] px-4 text-sm font-semibold text-white hover:bg-[#841424]"><Icon name="save" size={15} /> Guardar</button>}</div>
         </footer>
       </form>
     </div>

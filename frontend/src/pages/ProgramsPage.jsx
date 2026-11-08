@@ -36,7 +36,7 @@ export default function ProgramsPage({ programs, onOpen, onEdit, onCreate, onDup
             <FilterSelect label="Nivel" value={filters.level} options={['Licenciatura', 'Especialidad', 'Maestría', 'Doctorado']} onChange={(value) => updateFilter('level', value)} />
             <FilterSelect label="Modalidad" value={filters.modality} options={['Escolarizada', 'No escolarizada', 'Mixta']} onChange={(value) => updateFilter('modality', value)} />
             <FilterSelect label="Decanato" value={filters.deanery} options={[...new Set(programs.map((item) => item.deanery))]} onChange={(value) => updateFilter('deanery', value)} />
-            <FilterSelect label="Estado" value={filters.status} options={['Vigente', 'Borrador', 'En revisión']} onChange={(value) => updateFilter('status', value)} />
+            <FilterSelect label="Estado" value={filters.status} options={['Vigente', 'Borrador', 'En revisión', 'Histórico']} onChange={(value) => updateFilter('status', value)} />
           </div>
         </div>
       </section>

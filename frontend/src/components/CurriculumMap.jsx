@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import CycleColumn from './CycleColumn'
 import SubjectCard from './SubjectCard'
+import { isPlanReadOnly } from '../utils/planStatus'
 import { isCycleEditable } from '../utils/cycleStatus'
 
 export default function CurriculumMap({ view, subjects, program, onAdd, onEdit, onMove, onReorder, onRemove, onAssign, onDropSubject }) {
+  const isReadOnly = isPlanReadOnly(program)
   const [draggedSubjectId, setDraggedSubjectId] = useState(null)
 
   const handleDragStart = (id) => {
-    setDraggedSubjectId(id)
+    if (!isReadOnly) setDraggedSubjectId(id)
   }
 
   const handleDragEnd = () => {
@@ -16,7 +18,7 @@ export default function CurriculumMap({ view, subjects, program, onAdd, onEdit, 
 
   const handleDrop = (subjectId, targetCycle, targetSubjectId, placeAfter) => {
     setDraggedSubjectId(null)
-    if (onDropSubject) {
+    if (!isReadOnly && onDropSubject) {
       onDropSubject(subjectId, targetCycle, targetSubjectId, placeAfter)
     }
   }

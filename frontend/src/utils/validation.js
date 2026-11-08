@@ -13,13 +13,13 @@ export function curriculumSummary(subjects) {
   )
 }
 
-export function validateCurriculum(subjects, program, baseValidations = []) {
+export function validateCurriculum(subjects, program, baseValidations = [], electives = []) {
   const validations = [...baseValidations]
   const byCycle = new Map()
   subjects.forEach((item) => {
-    const list = byCycle.get(item.cycle) || []
+    const list = byCycle.get(Number(item.cycle)) || []
     list.push(item)
-    byCycle.set(item.cycle, list)
+    byCycle.set(Number(item.cycle), list)
   })
 
   byCycle.forEach((items, cycle) => {
@@ -48,7 +48,7 @@ export function validateCurriculum(subjects, program, baseValidations = []) {
 
   const keyToCycle = Object.fromEntries(subjects.filter((item) => item.key).map((item) => [item.key, item.cycle]))
   subjects.forEach((item) => {
-    if (item.prerequisite && keyToCycle[item.prerequisite] >= item.cycle) {
+    if (item.prerequisite && (keyToCycle[item.prerequisite] === undefined || Number(keyToCycle[item.prerequisite]) >= Number(item.cycle))) {
       validations.push({
         id: `serial-${item.id}`,
         severity: 'error',
@@ -65,7 +65,7 @@ export function validateCurriculum(subjects, program, baseValidations = []) {
   if (summary.credits < program.minCredits || summary.credits > program.maxCredits) {
     validations.push({
       id: 'credit-range',
-      severity: 'warning',
+      severity: 'error',
       title: 'Créditos totales fuera de rango',
       detail: `El plan suma ${summary.credits.toFixed(1)} créditos; el rango esperado es ${program.minCredits}–${program.maxCredits}.`,
       cycle: null,
@@ -76,7 +76,7 @@ export function validateCurriculum(subjects, program, baseValidations = []) {
   const practices = subjects.filter((item) => item.practice)
   const practiceHours = practices.reduce((sum, item) => sum + item.teacherHours + item.independentHours, 0)
   const practiceCredits = practices.reduce((sum, item) => sum + item.credits, 0)
-  if (practices.length < 2 || practiceHours < 320 || practiceCredits < 20) {
+  if (program.level === 'Licenciatura' && (new Set(practices.map((item) => Number(item.cycle))).size < 2 || practiceHours < 320 || practiceCredits < 20)) {
     validations.push({
       id: 'practice-min',
       severity: 'error',
@@ -87,8 +87,8 @@ export function validateCurriculum(subjects, program, baseValidations = []) {
     })
   }
 
-  const capstones = subjects.filter((item) => item.capstone)
-  if (capstones.length < 2) {
+  const capstones = subjects.filter((item) => item.capstone && Number(item.cycle) > Math.floor(program.cycles / 2))
+  if (program.level === 'Licenciatura' && capstones.length < 2) {
     validations.push({
       id: 'capstone-min',
       severity: 'error',
@@ -99,19 +99,34 @@ export function validateCurriculum(subjects, program, baseValidations = []) {
     })
   }
 
-  const requiredSubjects = getDeaneryPreestablishedSubjects(program.deanery)
+  const requiredSubjects = program.level === 'Licenciatura' ? getDeaneryPreestablishedSubjects(program.deanery) : []
   requiredSubjects.forEach((required) => {
     const found = subjects.find((item) => normalizeSubjectName(item.name) === normalizeSubjectName(required.name))
-    if (!found || found.cycle !== required.cycle) {
+    if (!found || Number(found.cycle) !== required.cycle) {
       validations.push({
         id: `required-${required.name}`,
-        severity: 'warning',
+        severity: 'error',
         title: 'Materia preestablecida faltante o fuera de ciclo',
         detail: `${required.name} debe ubicarse en el ciclo ${required.cycle}.`,
         cycle: required.cycle,
         subjectId: found?.id,
         code: 'ORDEN_PREESTABLECIDO',
       })
+    }
+  })
+
+  if (summary.teacherHours + summary.independentHours < program.minHours) {
+    validations.push({ id: 'minimum-hours', severity: 'error', title: 'Horas totales insuficientes', detail: `Se requieren ${program.minHours} horas totales; el plan suma ${summary.teacherHours + summary.independentHours}.`, code: 'HORAS_MINIMAS_PLAN' })
+  }
+
+  const minTeacher = program.modality === 'No escolarizada' ? 64 : 32
+  const minIndependent = program.modality === 'No escolarizada' ? 80 : 64
+  subjects.filter((item) => item.isElectiveSlot).forEach((slot) => {
+    if (program.level === 'Licenciatura' && (slot.teacherHours < minTeacher || slot.independentHours < minIndependent)) {
+      validations.push({ id: `slot-hours-${slot.id}`, severity: 'error', title: 'Espacio optativo con horas insuficientes', detail: `Se requieren ${minTeacher} horas docente y ${minIndependent} independientes.`, subjectId: slot.id, cycle: slot.cycle, code: 'OPTATIVA_HORAS_MINIMAS' })
+    }
+    if (!electives.some((item) => Number(item.cycle) === Number(slot.cycle))) {
+      validations.push({ id: `slot-catalog-${slot.id}`, severity: 'error', title: 'Espacio optativo sin oferta en catálogo', detail: `Agrega la oferta optativa del ciclo ${slot.cycle} al catálogo de este plan.`, subjectId: slot.id, cycle: slot.cycle, code: 'OPTATIVA_SIN_OFERTA' })
     }
   })
 

@@ -64,7 +64,7 @@ export default function CycleColumn({
     >
       <header className={`border-b p-3.5 ${exceeded ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white'}`}>
         <div className="flex items-start justify-between gap-3">
-          <div><p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">{program.cycleLabel}</p><h3 className="mt-0.5 text-sm font-bold text-slate-900">{cycleName(cycle)}</h3><p className="mt-1 text-[10px] font-semibold text-slate-500">{status === 'future' ? 'Futuro · editable' : status === 'current' ? 'En curso · bloqueado' : 'Terminado · bloqueado'}</p></div>
+          <div><p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">{program.cycleLabel}</p><h3 className="mt-0.5 text-sm font-bold text-slate-900">{cycleName(cycle)}</h3><p className="mt-1 text-[10px] font-semibold text-slate-500">{editable ? 'Editable' : status === 'current' ? 'En curso · solo lectura' : status === 'completed' ? 'Terminado · solo lectura' : 'Futuro · solo lectura'}</p></div>
           {editable && <button type="button" onClick={() => onAdd(cycle)} aria-label={`Añadir al ciclo ${cycle}`} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-[#A6192E] shadow-sm transition hover:border-blue-300 hover:bg-blue-50"><Icon name="plus" size={15} /></button>}
         </div>
         <div className="mt-3 flex items-center gap-3 text-[10px] font-medium text-slate-500">

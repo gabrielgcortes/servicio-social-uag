@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { isPlanReadOnly, PLAN_STATUSES } from '../utils/planStatus'
 import Icon from '../components/Icon'
 import { suggestedRules } from '../data/mockData'
 import { getDeaneryPreestablishedSubjects } from '../data/deaneryRequirements'
@@ -7,9 +8,10 @@ import { suggestNextPlanName } from '../utils/cycleStatus'
 const fieldClass = 'mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50'
 
 export default function ProgramForm({ initial, programs = [], onCancel, onSave }) {
+  const [saving, setSaving] = useState(false)
   const [sourceProgramId, setSourceProgramId] = useState('')
   const [form, setForm] = useState(() => initial ? {
-    name: initial.name, code: initial.plan, mnemonic: initial.mnemonic, deanery: initial.deanery,
+    status: initial.status, name: initial.name, code: initial.plan, mnemonic: initial.mnemonic, deanery: initial.deanery,
     level: initial.level, modality: initial.modality, jurisdiction: initial.jurisdiction,
     cycles: initial.cycles, weeks: initial.weeks, minCredits: initial.minCredits, maxCredits: initial.maxCredits,
     minHours: initial.minHours, maxSubjects: initial.maxSubjects, maxCycleCredits: initial.maxCycleCredits,
@@ -50,9 +52,15 @@ export default function ProgramForm({ initial, programs = [], onCancel, onSave }
     })
   }
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault()
-    onSave(form, sourceProgramId || null)
+    if (saving) return
+    setSaving(true)
+    try {
+      await onSave(form, sourceProgramId || null)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -65,12 +73,15 @@ export default function ProgramForm({ initial, programs = [], onCancel, onSave }
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={onCancel} className="h-10 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button>
-          <button type="submit" className="flex h-10 items-center gap-2 rounded-xl bg-[#A6192E] px-4 text-sm font-semibold text-white hover:bg-[#841424]"><Icon name="save" size={16} /> Guardar programa</button>
+          <button type="submit" disabled={saving} className="flex h-10 items-center gap-2 rounded-xl bg-[#A6192E] px-4 text-sm font-semibold text-white hover:bg-[#841424]"><Icon name="save" size={16} /> {saving ? 'Guardando…' : 'Guardar programa'}</button>
         </div>
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
         <div className="space-y-5">
+          {initial && <FormSection title="Simulación del ciclo de vida" description="Control manual del MVP: permite forzar estados para demostraciones, omitiendo el dictamen y la validación de entrada.">
+            <Field label="Estado del plan"><select value={form.status} onChange={(event) => set('status', event.target.value)} className={fieldClass}>{PLAN_STATUSES.map((status) => <option key={status}>{status}</option>)}</select></Field>
+          </FormSection>}
           {!initial && programs.length > 0 && (
             <FormSection
               title="Partir de un plan existente (opcional)"
@@ -98,6 +109,7 @@ export default function ProgramForm({ initial, programs = [], onCancel, onSave }
             </FormSection>
           )}
 
+          <fieldset disabled={Boolean(initial && isPlanReadOnly(initial))} className="space-y-5">
           <FormSection title="Información general" description="Datos de identificación institucional del programa.">
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Nombre del programa"><input required value={form.name} onChange={(e) => set('name', e.target.value)} className={fieldClass} placeholder="Ej. Licenciatura en Innovación Tecnológica" /></Field>
@@ -131,6 +143,7 @@ export default function ProgramForm({ initial, programs = [], onCancel, onSave }
             </label>
             {exception && <div className="mt-3 grid gap-3 sm:grid-cols-2"><Field label="Motivo de excepción"><input className={fieldClass} placeholder="Describe la justificación académica" /></Field><Field label="Responsable"><input className={fieldClass} placeholder="Nombre del responsable" /></Field></div>}
           </FormSection>
+          </fieldset>
         </div>
 
         <aside className="xl:sticky xl:top-24 xl:self-start">

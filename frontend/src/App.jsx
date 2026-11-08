@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
@@ -15,6 +15,8 @@ import Toast from './components/Toast'
 import { initialMockValidations, initialProgramId, initialSubjects, ownElectives, programs as demoPrograms } from './data/mockData'
 import { createMissingDeanerySubjects } from './data/deaneryRequirements'
 import { validateCurriculum } from './utils/validation'
+import { createPlanService } from './services/planService'
+import { applyPlanUpdate, isPlanReadOnly } from './utils/planStatus'
 import { isCycleEditable } from './utils/cycleStatus'
 
 function getHeaderMeta(pathname) {
@@ -71,6 +73,7 @@ function EditProgramWrapper({ programs, onSave, onCancel }) {
 function MapPageWrapper({
   programs,
   subjects,
+  electives,
   onSetActiveProgram,
   onAddSubject,
   onEditSubject,
@@ -82,10 +85,12 @@ function MapPageWrapper({
   onDuplicate,
   onExport,
   onNotify,
+  onUpdateStatus,
+  statusPending,
 }) {
   const { id } = useParams()
   const program = programs.find((item) => item.id === id) || programs[0]
-  const programSubjects = subjects.filter((subject) => subject.programId === program?.id)
+  const programSubjects = useMemo(() => subjects.filter((subject) => subject.programId === program?.id), [subjects, program?.id])
   const availableSubjects = [
     ...subjects.filter((subject) => !subject.isElectiveSlot && subject.type !== 'Optativa' && belongsToProgram(subject, program?.id)),
   ]
@@ -97,8 +102,8 @@ function MapPageWrapper({
   }, [program, onSetActiveProgram])
 
   const validations = useMemo(
-    () => (program ? validateCurriculum(programSubjects, program, initialMockValidations) : []),
-    [programSubjects, program]
+    () => (program ? validateCurriculum(programSubjects, program, initialMockValidations, electives.filter((item) => item.programId === program.id)) : []),
+    [programSubjects, program, electives]
   )
 
   if (!program) {
@@ -107,6 +112,7 @@ function MapPageWrapper({
 
   return (
     <MapPage
+      key={program.id}
       program={program}
       subjects={programSubjects}
       availableSubjects={availableSubjects}
@@ -121,6 +127,8 @@ function MapPageWrapper({
       onDuplicate={() => onDuplicate(program)}
       onExport={() => onExport(program)}
       onNotify={onNotify}
+      onUpdateStatus={onUpdateStatus}
+      statusPending={statusPending}
     />
   )
 }
@@ -130,7 +138,9 @@ function App() {
   const location = useLocation()
 
   const [programs, setPrograms] = useState(demoPrograms)
-  const [activeProgram, setActiveProgram] = useState(demoPrograms[0])
+  const [activeProgramId, setActiveProgramId] = useState(demoPrograms[0]?.id)
+  const activeProgram = programs.find((program) => program.id === activeProgramId)
+  const setActiveProgram = useCallback((program) => setActiveProgramId(program?.id), [])
   const [subjects, setSubjects] = useState(initialSubjects)
   const [electives, setElectives] = useState(() => assignLegacyElectiveOwnership(ownElectives))
   const [menuOpen, setMenuOpen] = useState(false)
@@ -139,6 +149,39 @@ function App() {
   const [exportProgram, setExportProgram] = useState(null)
   const [duplicateModalProgram, setDuplicateModalProgram] = useState(null)
   const [toast, setToast] = useState('')
+  const [statusPending, setStatusPending] = useState(false)
+  const mutationLock = useRef(false)
+  const planService = useMemo(() => createPlanService({ getSnapshot: () => ({
+    programs,
+    validations: (plan) => validateCurriculum(subjects.filter((subject) => subject.programId === plan.id), plan, initialMockValidations, electives.filter((item) => item.programId === plan.id)),
+  }) }), [programs, subjects, electives])
+
+  const updateProgramStatus = async (programId, nextStatus, metadata = {}) => {
+    if (mutationLock.current) return null
+    const plan = programs.find((item) => item.id === programId)
+    if (!plan) return null
+    mutationLock.current = true
+    setStatusPending(true)
+    try {
+      let updated
+      if (metadata.manual) updated = await planService.cambiarEstadoPlan(programId, nextStatus)
+      else if (plan.status === 'Borrador' && nextStatus === 'En revisión') updated = await planService.solicitarRevisionPlan(programId)
+      else if (plan.status === 'En revisión' && nextStatus === 'Vigente') updated = await planService.aprobarPlan(programId)
+      else if (plan.status === 'En revisión' && nextStatus === 'Borrador') updated = await planService.rechazarPlan(programId, metadata)
+      else if (plan.status === 'Vigente' && nextStatus === 'Histórico') updated = await planService.cambiarEstadoPlan(programId, nextStatus)
+      else throw new Error('La transición solicitada no está permitida.')
+      setPrograms((items) => applyPlanUpdate(items, updated))
+      setToast(nextStatus === 'Vigente' ? 'Plan aprobado y publicado. El plan vigente anterior de la carrera se archivó, si existía.' : nextStatus === 'Borrador' ? 'Plan devuelto a borrador con observaciones.' : `El plan pasó a ${nextStatus}.`)
+      return updated
+    } catch (error) {
+      setToast(error.message || 'No se pudo actualizar el estado del plan.')
+      return null
+    } finally {
+      mutationLock.current = false
+      setStatusPending(false)
+    }
+  }
+
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -196,13 +239,23 @@ function App() {
     return { clonedSubjects, clonedElectives }
   }
 
-  const duplicateProgram = (sourceProgram, overrides = {}, openMapAfter = true) => {
+  const duplicateProgram = async (sourceProgram, overrides = {}, openMapAfter = true) => {
     if (!sourceProgram) return
-    const newId = createProgramId()
+    if (mutationLock.current) return
+    mutationLock.current = true
+    let duplicate
+    try {
+      duplicate = await planService.duplicarPlan(sourceProgram.id, { ...overrides, version: overrides.version || 'v1.0' })
+    } catch (error) {
+      setToast(error.message || 'No se pudo duplicar el plan.')
+      return
+    } finally {
+      mutationLock.current = false
+    }
+    const newId = duplicate.id
     const newName = overrides.name || sourceProgram.name
     const newProgram = {
-      ...sourceProgram,
-      ...overrides,
+      ...duplicate,
       id: newId,
       name: newName,
       shortName: newName.replace(/^(Licenciatura|Maestría|Especialidad|Doctorado) en /, ''),
@@ -225,9 +278,14 @@ function App() {
     navigate(openMapAfter ? `/mapas/${newProgram.id}` : '/programas')
   }
 
-  const saveProgram = (form, editingProgram = null, sourceProgramId = null) => {
+  const saveProgram = async (form, editingProgram = null, sourceProgramId = null) => {
     let savedProgram
     if (editingProgram) {
+      if (form.status !== editingProgram.status) {
+        const updated = await updateProgramStatus(editingProgram.id, form.status, { manual: true })
+        if (!updated) return
+        editingProgram = updated
+      }
       savedProgram = {
         ...editingProgram,
         name: form.name,
@@ -246,7 +304,7 @@ function App() {
         maxCycleCredits: form.maxCycleCredits,
         updated: 'Ahora',
       }
-      setPrograms((items) => items.map((item) => (item.id === savedProgram.id ? savedProgram : item)))
+      setPrograms((items) => applyPlanUpdate(items, savedProgram))
       if (activeProgram?.id === savedProgram.id) setActiveProgram(savedProgram)
     } else {
       const sourceProgram = sourceProgramId ? programs.find((item) => item.id === sourceProgramId) : null
@@ -260,6 +318,7 @@ function App() {
         updated: 'Ahora',
         cycleLabel: form.level === 'Licenciatura' ? 'Semestre' : 'Cuatrimestre',
         currentCycle: 0,
+        careerId: sourceProgram?.careerId || sourceProgram?.mnemonic || form.mnemonic,
         accent: sourceProgram ? sourceProgram.accent : 'from-blue-600 to-amber-500',
         ...form,
       }
@@ -279,7 +338,7 @@ function App() {
     }
 
     const assignedSubjects = subjects.filter((subject) => subject.programId === savedProgram.id)
-    const addedSubjects = createMissingDeanerySubjects(savedProgram, assignedSubjects)
+    const addedSubjects = isPlanReadOnly(savedProgram) ? [] : createMissingDeanerySubjects(savedProgram, assignedSubjects)
     if (addedSubjects.length) setSubjects((items) => [...items, ...addedSubjects])
     const action = editingProgram ? 'El programa y su nueva configuración quedaron guardados.' : 'Se creó el programa de demostración.'
     setToast(addedSubjects.length ? `${action} Se asignaron ${addedSubjects.length} materias preestablecidas.` : action)
@@ -287,6 +346,10 @@ function App() {
   }
 
   const saveSubject = (saved) => {
+    if (!activeProgram || isPlanReadOnly(activeProgram) || subjectModal?.readOnly) {
+      setToast('Este plan está protegido en modo de solo lectura.')
+      return
+    }
     const original = subjects.find((item) => item.id === saved.id && item.programId === activeProgram?.id)
     if ((original && !isCycleEditable(activeProgram, original.cycle)) ||
         ((subjectModal.source === 'map' || original) && !isCycleEditable(activeProgram, saved.cycle))) {
@@ -520,9 +583,10 @@ function App() {
               <MapPageWrapper
                 programs={programs}
                 subjects={subjects}
+                electives={electives}
                 onSetActiveProgram={setActiveProgram}
                 onAddSubject={(cycle) => isCycleEditable(activeProgram, cycle) && setSubjectModal({ subject: null, cycle, source: 'map' })}
-                onEditSubject={(subject) => isCycleEditable(activeProgram, subject.cycle) && setSubjectModal({ subject, cycle: subject.cycle, source: 'map' })}
+                onEditSubject={(subject) => setSubjectModal({ subject, cycle: subject.cycle, source: 'map', readOnly: !isCycleEditable(activeProgram, subject.cycle) })}
                 onMoveSubject={moveSubject}
                 onReorderSubject={reorderSubject}
                 onRemoveSubject={removeSubject}
@@ -531,6 +595,8 @@ function App() {
                 onDuplicate={(program) => setDuplicateModalProgram(program)}
                 onExport={(program) => setExportProgram(program)}
                 onNotify={setToast}
+                onUpdateStatus={updateProgramStatus}
+                statusPending={statusPending}
               />
             }
           />
@@ -543,11 +609,8 @@ function App() {
                 electives={electives}
                 onSelectProgram={setActiveProgram}
                 onEdit={(subject) => {
-                  if (subject?.programId && subjects.some((item) => item.id === subject.id && item.programId) && !isCycleEditable(activeProgram, subject.cycle)) {
-                    setToast('Solo se pueden modificar ciclos futuros.')
-                    return
-                  }
-                  setSubjectModal({ subject, cycle: subject?.cycle || 7, source: 'catalog' })
+                  if (!subject && isPlanReadOnly(activeProgram)) return
+                  setSubjectModal({ subject, cycle: subject?.cycle || 7, source: 'catalog', readOnly: isPlanReadOnly(activeProgram) || Boolean(subject && !isCycleEditable(activeProgram, subject.cycle)) })
                 }}
               />
             }
@@ -568,6 +631,7 @@ function App() {
           cycle={subjectModal.cycle || 1}
           program={activeProgram}
           source={subjectModal.source}
+          readOnly={subjectModal.readOnly || isPlanReadOnly(activeProgram)}
           subjects={[
             ...subjects.filter((subject) => subject.programId === activeProgram?.id),
             ...electives.filter((subject) => (subject.programId || initialProgramId) === activeProgram?.id),
