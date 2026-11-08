@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import Icon from '../components/Icon'
 import ProgramCard from '../components/ProgramCard'
 
-export default function ProgramsPage({ programs, onOpen, onEdit, onCreate }) {
+export default function ProgramsPage({ programs, onOpen, onEdit, onCreate, onDuplicate }) {
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState({ level: '', modality: '', deanery: '', status: '' })
   const filtered = useMemo(() => programs.filter((program) => {
@@ -46,7 +46,7 @@ export default function ProgramsPage({ programs, onOpen, onEdit, onCreate }) {
         <button type="button" onClick={() => { setSearch(''); setFilters({ level: '', modality: '', deanery: '', status: '' }) }} className="text-xs font-semibold text-blue-700 hover:text-blue-900">Limpiar filtros</button>
       </div>
       <div className="mt-3 grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
-        {filtered.map((program) => <ProgramCard key={program.id} program={program} onOpen={onOpen} onEdit={onEdit} />)}
+        {filtered.map((program) => <ProgramCard key={program.id} program={program} onOpen={onOpen} onEdit={onEdit} onDuplicate={onDuplicate} />)}
       </div>
       {filtered.length === 0 && <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-16 text-center"><Icon name="search" size={28} className="mx-auto text-slate-300" /><p className="mt-3 text-sm font-semibold text-slate-700">No encontramos programas</p><p className="mt-1 text-xs text-slate-400">Prueba con otros filtros o términos de búsqueda.</p></div>}
     </div>

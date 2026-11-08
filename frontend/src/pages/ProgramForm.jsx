@@ -2,10 +2,12 @@ import { useMemo, useState } from 'react'
 import Icon from '../components/Icon'
 import { suggestedRules } from '../data/mockData'
 import { getDeaneryPreestablishedSubjects } from '../data/deaneryRequirements'
+import { suggestNextPlanName } from '../utils/cycleStatus'
 
 const fieldClass = 'mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50'
 
-export default function ProgramForm({ initial, onCancel, onSave }) {
+export default function ProgramForm({ initial, programs = [], onCancel, onSave }) {
+  const [sourceProgramId, setSourceProgramId] = useState('')
   const [form, setForm] = useState(() => initial ? {
     name: initial.name, code: initial.plan, mnemonic: initial.mnemonic, deanery: initial.deanery,
     level: initial.level, modality: initial.modality, jurisdiction: initial.jurisdiction,
@@ -20,9 +22,37 @@ export default function ProgramForm({ initial, onCancel, onSave }) {
   const set = (key, value) => setForm((current) => ({ ...current, [key]: value }))
   const applyLevel = (level) => setForm((current) => ({ ...current, level, ...suggestedRules[level] }))
 
+  const selectTemplateProgram = (id) => {
+    setSourceProgramId(id)
+    if (!id) {
+      setForm({
+        name: '', code: 'Plan 2027', mnemonic: '', deanery: 'Diseño, Ciencia y Tecnología', level: 'Licenciatura', modality: 'Escolarizada', jurisdiction: 'Federal', ...suggestedRules.Licenciatura,
+      })
+      return
+    }
+    const base = programs.find((item) => item.id === id)
+    if (!base) return
+    setForm({
+      name: base.name,
+      code: suggestNextPlanName(base.plan, programs.map((item) => item.plan)),
+      mnemonic: base.mnemonic,
+      deanery: base.deanery,
+      level: base.level,
+      modality: base.modality,
+      jurisdiction: base.jurisdiction,
+      cycles: base.cycles,
+      weeks: base.weeks,
+      minCredits: base.minCredits,
+      maxCredits: base.maxCredits,
+      minHours: base.minHours,
+      maxSubjects: base.maxSubjects,
+      maxCycleCredits: base.maxCycleCredits,
+    })
+  }
+
   const submit = (event) => {
     event.preventDefault()
-    onSave(form)
+    onSave(form, sourceProgramId || null)
   }
 
   return (
@@ -41,6 +71,33 @@ export default function ProgramForm({ initial, onCancel, onSave }) {
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
         <div className="space-y-5">
+          {!initial && programs.length > 0 && (
+            <FormSection
+              title="Partir de un plan existente (opcional)"
+              description="Selecciona una carrera/plan anterior si deseas duplicar todas sus materias a lo largo de los semestres y solo hacer ajustes."
+            >
+              <Field label="Programa base a duplicar">
+                <select
+                  value={sourceProgramId}
+                  onChange={(e) => selectTemplateProgram(e.target.value)}
+                  className={fieldClass}
+                >
+                  <option value="">Empezar en blanco (solo materias preestablecidas de decanato)</option>
+                  {programs.map((program) => (
+                    <option key={program.id} value={program.id}>
+                      {program.name} · {program.plan} ({program.mnemonic})
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              {sourceProgramId && (
+                <p className="mt-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] font-medium text-blue-800">
+                  Al guardar se copiarán todas las asignaturas obligatorias, seriaciones, espacios optativos y catálogo de optativas del plan seleccionado.
+                </p>
+              )}
+            </FormSection>
+          )}
+
           <FormSection title="Información general" description="Datos de identificación institucional del programa.">
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Nombre del programa"><input required value={form.name} onChange={(e) => set('name', e.target.value)} className={fieldClass} placeholder="Ej. Licenciatura en Innovación Tecnológica" /></Field>

@@ -17,4 +17,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 ::-webkit-scrollbar-track { background: #F3F1EB; }
 ::-webkit-scrollbar-thumb { border: 2px solid #F3F1EB; border-radius: 999px; background: #D3D1CB; }
 ::-webkit-scrollbar-thumb:hover { background: #A6192E; }
+dialog:modal {
+  overscroll-behavior: contain;
+}
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgb(2 6 23 / 0.4);
+  backdrop-filter: blur(4px);
+}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }

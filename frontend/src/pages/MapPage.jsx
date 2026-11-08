@@ -5,7 +5,7 @@ import ValidationPanel from '../components/ValidationPanel'
 import UnassignedSubjectsPanel from '../components/UnassignedSubjectsPanel'
 import { curriculumSummary } from '../utils/validation'
 
-export default function MapPage({ program, subjects, availableSubjects, validations, onAdd, onEdit, onMove, onReorder, onRemove, onAssign, onDropSubject, onExport, onNotify }) {
+export default function MapPage({ program, subjects, availableSubjects, validations, onAdd, onEdit, onMove, onReorder, onRemove, onAssign, onDropSubject, onDuplicate, onExport, onNotify }) {
   const [view, setView] = useState('cycles')
   const [activePanel, setActivePanel] = useState('available')
   const summary = useMemo(() => curriculumSummary(subjects), [subjects])
@@ -27,7 +27,7 @@ export default function MapPage({ program, subjects, availableSubjects, validati
             <p className="mt-2 text-xs text-slate-500">Estado simulado: {program.currentCycle ? `${program.cycleLabel} ${program.currentCycle} en curso` : 'el programa aún no inicia'}. Solo se pueden modificar ciclos futuros.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => onNotify('Versión duplicada como borrador v2.4.')} className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"><Icon name="copy" size={14} /> Duplicar versión</button>
+            <button type="button" onClick={() => onDuplicate ? onDuplicate(program) : onNotify('Versión duplicada como borrador v2.4.')} className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"><Icon name="copy" size={14} /> Duplicar versión</button>
             <button type="button" onClick={() => { setView('validations'); setActivePanel(null) }} className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"><Icon name="circleCheck" size={14} /> Validar <span className="rounded-full bg-red-100 px-1.5 text-[9px] text-red-700">{errors}</span></button>
             <button type="button" onClick={onExport} className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"><Icon name="export" size={14} /> Exportar</button>
             <button type="button" onClick={() => onNotify('Los cambios del prototipo quedaron guardados en esta sesión.')} className="flex h-9 items-center gap-1.5 rounded-xl bg-[#A6192E] px-3.5 text-xs font-semibold text-white shadow-sm hover:bg-[#841424]"><Icon name="save" size={14} /> Guardar cambios</button>

@@ -6,7 +6,7 @@ const statusStyles = {
   'En revisión': 'bg-blue-50 text-blue-700 ring-blue-200',
 }
 
-export default function ProgramCard({ program, onOpen, onEdit }) {
+export default function ProgramCard({ program, onOpen, onEdit, onDuplicate }) {
   const progressColor = program.progress >= 90 ? 'bg-emerald-500' : program.progress >= 75 ? 'bg-blue-600' : 'bg-amber-500'
   return (
     <article className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-200/70">
@@ -30,10 +30,20 @@ export default function ProgramCard({ program, onOpen, onEdit }) {
             <span className="font-bold text-slate-700">{program.progress}%</span>
           </div>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${progressColor}`} style={{ width: `${program.progress}%` }} /></div>
-          <div className="mt-4 flex items-center justify-between">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
             <span className="flex items-center gap-1.5 text-[10px] text-slate-400"><Icon name="clock" size={13} />{program.updated}</span>
-            <div className="flex gap-1">
-              <button type="button" onClick={() => onEdit(program)} className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800">Editar</button>
+            <div className="flex items-center gap-1">
+              {onDuplicate && (
+                <button
+                  type="button"
+                  onClick={() => onDuplicate(program)}
+                  title="Duplicar programa y sus materias"
+                  className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                >
+                  <Icon name="copy" size={12} /> Duplicar
+                </button>
+              )}
+              <button type="button" onClick={() => onEdit(program)} className="rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800">Editar</button>
               <button type="button" onClick={() => onOpen(program)} className="flex items-center gap-1 rounded-lg bg-[#A6192E] px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#841424]">Abrir mapa <Icon name="chevronRight" size={13} /></button>
             </div>
           </div>

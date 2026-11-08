@@ -9,6 +9,7 @@ import SubjectModal from './components/SubjectModal'
 import CatalogTable from './pages/CatalogTable'
 import ConfigPage from './pages/ConfigPage'
 import ExportModal from './components/ExportModal'
+import DuplicateProgramModal from './components/DuplicateProgramModal'
 import ExportsPage from './pages/ExportsPage'
 import Toast from './components/Toast'
 import { initialMockValidations, initialProgramId, initialSubjects, ownElectives, programs as demoPrograms } from './data/mockData'
@@ -78,6 +79,7 @@ function MapPageWrapper({
   onRemoveSubject,
   onAssignSubject,
   onDropSubject,
+  onDuplicate,
   onExport,
   onNotify,
 }) {
@@ -116,6 +118,7 @@ function MapPageWrapper({
       onRemove={onRemoveSubject}
       onAssign={onAssignSubject}
       onDropSubject={onDropSubject}
+      onDuplicate={() => onDuplicate(program)}
       onExport={() => onExport(program)}
       onNotify={onNotify}
     />
@@ -134,6 +137,7 @@ function App() {
   const [sidebarVisible, setSidebarVisible] = useState(true)
   const [subjectModal, setSubjectModal] = useState(null)
   const [exportProgram, setExportProgram] = useState(null)
+  const [duplicateModalProgram, setDuplicateModalProgram] = useState(null)
   const [toast, setToast] = useState('')
 
   useEffect(() => {
@@ -159,12 +163,75 @@ function App() {
     navigate('/programas/nuevo')
   }
 
-  const saveProgram = (form, editingProgram = null) => {
+  const cloneProgramSubjectsAndElectives = (sourceProgram, newProgram) => {
+    const remapKey = (key) => {
+      if (!key) return key
+      if (newProgram.mnemonic && sourceProgram.mnemonic && newProgram.mnemonic !== sourceProgram.mnemonic && key.startsWith(sourceProgram.mnemonic)) {
+        return `${newProgram.mnemonic}${key.slice(sourceProgram.mnemonic.length)}`
+      }
+      return key
+    }
+
+    const clonedSubjects = subjects
+      .filter((item) => belongsToProgram(item, sourceProgram.id))
+      .map((item, index) => ({
+        ...item,
+        id: `${newProgram.id}-subj-${index + 1}-${Date.now()}`,
+        programId: item.programId ? newProgram.id : null,
+        ownerProgramId: newProgram.id,
+        key: remapKey(item.key),
+        prerequisite: remapKey(item.prerequisite),
+      }))
+
+    const clonedElectives = electives
+      .filter((item) => (item.programId || initialProgramId) === sourceProgram.id)
+      .map((item, index) => ({
+        ...item,
+        id: `${newProgram.id}-elec-${index + 1}-${Date.now()}`,
+        programId: newProgram.id,
+        key: remapKey(item.key),
+        prerequisite: remapKey(item.prerequisite),
+      }))
+
+    return { clonedSubjects, clonedElectives }
+  }
+
+  const duplicateProgram = (sourceProgram, overrides = {}, openMapAfter = true) => {
+    if (!sourceProgram) return
+    const newId = createProgramId()
+    const newName = overrides.name || sourceProgram.name
+    const newProgram = {
+      ...sourceProgram,
+      ...overrides,
+      id: newId,
+      name: newName,
+      shortName: newName.replace(/^(Licenciatura|Maestría|Especialidad|Doctorado) en /, ''),
+      plan: overrides.plan || sourceProgram.plan,
+      version: overrides.version || 'v1.0',
+      status: 'Borrador',
+      currentCycle: 0,
+      updated: 'Ahora',
+    }
+
+    const { clonedSubjects, clonedElectives } = cloneProgramSubjectsAndElectives(sourceProgram, newProgram)
+    setPrograms((items) => [newProgram, ...items])
+    setSubjects((items) => [...items, ...clonedSubjects])
+    setElectives((items) => [...items, ...clonedElectives])
+    setActiveProgram(newProgram)
+    setDuplicateModalProgram(null)
+
+    const mapAssignedCount = clonedSubjects.filter((item) => item.programId === newProgram.id).length
+    setToast(`Se duplicó "${sourceProgram.plan}" como "${newProgram.plan}" con ${mapAssignedCount} materias en el mapa curricular.`)
+    navigate(openMapAfter ? `/mapas/${newProgram.id}` : '/programas')
+  }
+
+  const saveProgram = (form, editingProgram = null, sourceProgramId = null) => {
     let savedProgram
     if (editingProgram) {
       savedProgram = {
         ...editingProgram,
         name: form.name,
+        plan: form.code || editingProgram.plan,
         mnemonic: form.mnemonic,
         deanery: form.deanery,
         level: form.level,
@@ -182,21 +249,33 @@ function App() {
       setPrograms((items) => items.map((item) => (item.id === savedProgram.id ? savedProgram : item)))
       if (activeProgram?.id === savedProgram.id) setActiveProgram(savedProgram)
     } else {
+      const sourceProgram = sourceProgramId ? programs.find((item) => item.id === sourceProgramId) : null
       savedProgram = {
         id: createProgramId(),
         shortName: form.name.replace(/^(Licenciatura|Maestría|Especialidad|Doctorado) en /, ''),
         plan: form.code,
-        version: 'v0.1',
+        version: sourceProgram ? 'v1.0' : 'v0.1',
         status: 'Borrador',
-        progress: 12,
+        progress: sourceProgram ? sourceProgram.progress : 12,
         updated: 'Ahora',
         cycleLabel: form.level === 'Licenciatura' ? 'Semestre' : 'Cuatrimestre',
         currentCycle: 0,
-        accent: 'from-blue-600 to-amber-500',
+        accent: sourceProgram ? sourceProgram.accent : 'from-blue-600 to-amber-500',
         ...form,
       }
       setPrograms((items) => [savedProgram, ...items])
       setActiveProgram(savedProgram)
+
+      if (sourceProgram) {
+        const { clonedSubjects, clonedElectives } = cloneProgramSubjectsAndElectives(sourceProgram, savedProgram)
+        const assignedClones = clonedSubjects.filter((item) => item.programId === savedProgram.id)
+        const extraDeanery = createMissingDeanerySubjects(savedProgram, assignedClones)
+        setSubjects((items) => [...items, ...clonedSubjects, ...extraDeanery])
+        setElectives((items) => [...items, ...clonedElectives])
+        setToast(`Se creó "${savedProgram.plan}" duplicando ${assignedClones.length} materias del plan base.`)
+        navigate(`/mapas/${savedProgram.id}`)
+        return
+      }
     }
 
     const assignedSubjects = subjects.filter((subject) => subject.programId === savedProgram.id)
@@ -401,6 +480,7 @@ function App() {
                 onOpen={openMap}
                 onEdit={editProgram}
                 onCreate={createProgram}
+                onDuplicate={(program) => setDuplicateModalProgram(program)}
               />
             }
           />
@@ -409,8 +489,9 @@ function App() {
             element={
               <ProgramForm
                 initial={null}
+                programs={programs}
                 onCancel={() => navigate('/programas')}
-                onSave={(form) => saveProgram(form, null)}
+                onSave={(form, sourceProgramId) => saveProgram(form, null, sourceProgramId)}
               />
             }
           />
@@ -447,6 +528,7 @@ function App() {
                 onRemoveSubject={removeSubject}
                 onAssignSubject={assignSubject}
                 onDropSubject={handleDropSubject}
+                onDuplicate={(program) => setDuplicateModalProgram(program)}
                 onExport={(program) => setExportProgram(program)}
                 onNotify={setToast}
               />
@@ -492,6 +574,18 @@ function App() {
           ]}
           onClose={() => setSubjectModal(null)}
           onSave={saveSubject}
+        />
+      )}
+      {duplicateModalProgram && (
+        <DuplicateProgramModal
+          key={duplicateModalProgram.id}
+          open
+          program={duplicateModalProgram}
+          existingPrograms={programs}
+          subjectCount={subjects.filter((item) => item.programId === duplicateModalProgram.id).length}
+          electiveCount={electives.filter((item) => (item.programId || initialProgramId) === duplicateModalProgram.id).length}
+          onClose={() => setDuplicateModalProgram(null)}
+          onDuplicate={duplicateProgram}
         />
       )}
       {exportProgram && (
