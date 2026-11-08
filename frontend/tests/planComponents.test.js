@@ -1,6 +1,7 @@
 import { after, before, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createElement } from 'react'
+import { MemoryRouter } from 'react-router-dom'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { fileURLToPath } from 'node:url'
 import { createServer } from 'vite'
@@ -9,8 +10,10 @@ let server
 let MapPage
 let SubjectModal
 let CurriculumMap
+let App
 before(async () => {
   server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), server: { middlewareMode: true, hmr: false, ws: false } })
+  App = (await server.ssrLoadModule('/src/App.jsx')).default
   MapPage = (await server.ssrLoadModule('/src/pages/MapPage.jsx')).default
   SubjectModal = (await server.ssrLoadModule('/src/components/SubjectModal.jsx')).default
   CurriculumMap = (await server.ssrLoadModule('/src/components/CurriculumMap.jsx')).default
@@ -70,4 +73,19 @@ test('read only subject modal disables its fieldset and omits save', () => {
   assert.match(html, /<fieldset disabled=""/)
   assert.doesNotMatch(html, /type="submit"/)
   assert.match(html, />Cerrar<\/button>/)
+})
+
+
+test('App bootstraps the extracted curriculum hook and renders catalog and map routes', () => {
+  const render = (path) => renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, createElement(App)))
+  assert.match(render('/catalogo'), /Asignaturas y optativas/)
+  assert.match(render('/mapas/demo-1'), /Plan oficial en curso/)
+})
+
+test('pending subject saves disable fields and submit; errors stay visible for retry', () => {
+  const html = renderToStaticMarkup(createElement(SubjectModal, { open: true, subject, program, cycle: 1, subjects: [subject], pending: true, saveError: 'Error de guardado simulado' }))
+  assert.match(html, /<fieldset disabled=""/)
+  assert.match(html, /<button type="submit" disabled=""/)
+  assert.match(html, /Guardando…/)
+  assert.match(html, /role="alert"[^>]*>Error de guardado simulado/)
 })

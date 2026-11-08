@@ -12,12 +12,13 @@ import ExportModal from './components/ExportModal'
 import DuplicateProgramModal from './components/DuplicateProgramModal'
 import ExportsPage from './pages/ExportsPage'
 import Toast from './components/Toast'
-import { initialMockValidations, initialProgramId, initialSubjects, ownElectives, programs as demoPrograms } from './data/mockData'
-import { createMissingDeanerySubjects } from './data/deaneryRequirements'
+import { initialMockValidations, initialProgramId, programs as demoPrograms } from './data/mockData'
+import { demoCurriculum } from './data/demoCurriculum'
+import { useCurriculumSubjects } from './hooks/useCurriculumSubjects'
 import { validateCurriculum } from './utils/validation'
 import { createPlanService } from './services/planService'
 import { applyPlanUpdate, isPlanReadOnly } from './utils/planStatus'
-import { belongsToProgram, upsertCatalogSubject } from './utils/subjectCatalog'
+import { belongsToProgram } from './utils/subjectCatalog'
 import { isCycleEditable } from './utils/cycleStatus'
 
 function getHeaderMeta(pathname) {
@@ -45,10 +46,6 @@ function getHeaderMeta(pathname) {
 function createProgramId() {
   if (globalThis.crypto?.randomUUID) return `program-${globalThis.crypto.randomUUID()}`
   return `program-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-}
-
-function assignLegacyElectiveOwnership(electives) {
-  return electives.map((elective) => elective.programId ? elective : { ...elective, programId: initialProgramId })
 }
 
 function EditProgramWrapper({ programs, onSave, onCancel }) {
@@ -138,8 +135,6 @@ function App() {
   const [activeProgramId, setActiveProgramId] = useState(demoPrograms[0]?.id)
   const activeProgram = programs.find((program) => program.id === activeProgramId)
   const setActiveProgram = useCallback((program) => setActiveProgramId(program?.id), [])
-  const [subjects, setSubjects] = useState(initialSubjects)
-  const [electives, setElectives] = useState(() => assignLegacyElectiveOwnership(ownElectives))
   const [menuOpen, setMenuOpen] = useState(false)
   const [sidebarVisible, setSidebarVisible] = useState(true)
   const [subjectModal, setSubjectModal] = useState(null)
@@ -148,6 +143,16 @@ function App() {
   const [toast, setToast] = useState('')
   const [statusPending, setStatusPending] = useState(false)
   const mutationLock = useRef(false)
+  const curriculum = useCurriculumSubjects({
+    programs, initialData: demoCurriculum, onNotify: setToast,
+    acquireMutation: () => {
+      if (mutationLock.current) return false
+      mutationLock.current = true
+      return true
+    },
+    releaseMutation: () => { mutationLock.current = false },
+  })
+  const { subjects, electives } = curriculum
   const planService = useMemo(() => createPlanService({ getSnapshot: () => ({
     programs,
     validations: (plan) => validateCurriculum(subjects.filter((subject) => subject.programId === plan.id), plan, initialMockValidations, electives.filter((item) => item.programId === plan.id)),
@@ -203,39 +208,6 @@ function App() {
     navigate('/programas/nuevo')
   }
 
-  const cloneProgramSubjectsAndElectives = (sourceProgram, newProgram) => {
-    const remapKey = (key) => {
-      if (!key) return key
-      if (newProgram.mnemonic && sourceProgram.mnemonic && newProgram.mnemonic !== sourceProgram.mnemonic && key.startsWith(sourceProgram.mnemonic)) {
-        return `${newProgram.mnemonic}${key.slice(sourceProgram.mnemonic.length)}`
-      }
-      return key
-    }
-
-    const clonedSubjects = subjects
-      .filter((item) => belongsToProgram(item, sourceProgram.id))
-      .map((item, index) => ({
-        ...item,
-        id: `${newProgram.id}-subj-${index + 1}-${Date.now()}`,
-        programId: item.programId ? newProgram.id : null,
-        ownerProgramId: newProgram.id,
-        key: remapKey(item.key),
-        prerequisite: remapKey(item.prerequisite),
-      }))
-
-    const clonedElectives = electives
-      .filter((item) => (item.programId || initialProgramId) === sourceProgram.id)
-      .map((item, index) => ({
-        ...item,
-        id: `${newProgram.id}-elec-${index + 1}-${Date.now()}`,
-        programId: newProgram.id,
-        key: remapKey(item.key),
-        prerequisite: remapKey(item.prerequisite),
-      }))
-
-    return { clonedSubjects, clonedElectives }
-  }
-
   const duplicateProgram = async (sourceProgram, overrides = {}, openMapAfter = true) => {
     if (!sourceProgram) return
     if (mutationLock.current) return
@@ -263,10 +235,8 @@ function App() {
       updated: 'Ahora',
     }
 
-    const { clonedSubjects, clonedElectives } = cloneProgramSubjectsAndElectives(sourceProgram, newProgram)
+    const { clonedSubjects } = curriculum.copyPlanContent(sourceProgram, newProgram)
     setPrograms((items) => [newProgram, ...items])
-    setSubjects((items) => [...items, ...clonedSubjects])
-    setElectives((items) => [...items, ...clonedElectives])
     setActiveProgram(newProgram)
     setDuplicateModalProgram(null)
 
@@ -323,190 +293,30 @@ function App() {
       setActiveProgram(savedProgram)
 
       if (sourceProgram) {
-        const { clonedSubjects, clonedElectives } = cloneProgramSubjectsAndElectives(sourceProgram, savedProgram)
+        const { clonedSubjects } = curriculum.copyPlanContent(sourceProgram, savedProgram, true)
         const assignedClones = clonedSubjects.filter((item) => item.programId === savedProgram.id)
-        const extraDeanery = createMissingDeanerySubjects(savedProgram, assignedClones)
-        setSubjects((items) => [...items, ...clonedSubjects, ...extraDeanery])
-        setElectives((items) => [...items, ...clonedElectives])
         setToast(`Se creó "${savedProgram.plan}" duplicando ${assignedClones.length} materias del plan base.`)
         navigate(`/mapas/${savedProgram.id}`)
         return
       }
     }
 
-    const assignedSubjects = subjects.filter((subject) => subject.programId === savedProgram.id)
-    const addedSubjects = isPlanReadOnly(savedProgram) ? [] : createMissingDeanerySubjects(savedProgram, assignedSubjects)
-    if (addedSubjects.length) setSubjects((items) => [...items, ...addedSubjects])
+    const addedSubjects = curriculum.ensureDeanerySubjects(savedProgram)
     const action = editingProgram ? 'El programa y su nueva configuración quedaron guardados.' : 'Se creó el programa de demostración.'
     setToast(addedSubjects.length ? `${action} Se asignaron ${addedSubjects.length} materias preestablecidas.` : action)
     navigate('/programas')
   }
 
-  const saveSubject = (saved) => {
-    if (!activeProgram || isPlanReadOnly(activeProgram) || subjectModal?.readOnly) {
-      setToast('Este plan está protegido en modo de solo lectura.')
-      return
-    }
-    const original = subjects.find((item) => item.id === saved.id && item.programId === activeProgram?.id)
-    if ((original && !isCycleEditable(activeProgram, original.cycle)) ||
-        ((subjectModal.source === 'map' || original) && !isCycleEditable(activeProgram, saved.cycle))) {
-      setToast('Solo se pueden modificar ciclos futuros.')
-      return
-    }
-    if (subjectModal.source === 'map' && saved.type === 'Optativa' && !saved.isElectiveSlot) {
-      setToast('Las materias optativas se administran en el catálogo; en el mapa agrega un espacio optativo.')
-      return
-    }
-    if (subjectModal.source === 'catalog' && saved.isElectiveSlot) {
-      setToast('Los espacios optativos se administran exclusivamente desde el mapa curricular.')
-      return
-    }
-
-    if (subjectModal.source === 'catalog') {
-      const exists = electives.some((item) => item.id === saved.id)
-      if (exists || saved.type === 'Optativa') {
-        const savedForProgram = { ...saved, programId: activeProgram?.id }
-        setElectives((items) =>
-          exists ? items.map((item) => (item.id === saved.id ? savedForProgram : item)) : [...items, savedForProgram]
-        )
-      } else {
-        setSubjects((items) => upsertCatalogSubject(items, saved, activeProgram.id))
-      }
-    } else {
-      setSubjects((items) =>
-        items.some((item) => item.id === saved.id)
-          ? items.map((item) => (item.id === saved.id ? saved : item))
-          : [...items, { ...saved, programId: activeProgram?.id }]
-      )
-    }
-    setSubjectModal(null)
-    setToast(subjectModal.source === 'catalog' && !original && saved.type !== 'Optativa'
-      ? 'Asignatura guardada en el catálogo de la carrera. Asígnala al mapa desde Materias disponibles para que cuente en la validación.'
-      : 'La asignatura se actualizó y las validaciones fueron recalculadas.')
+  const openSubjectModal = (modal) => {
+    curriculum.clearError()
+    setSubjectModal(modal)
   }
 
-  const moveSubject = (id, cycle) => {
-    const moved = subjects.find((item) => item.id === id)
-    if (!moved || !isCycleEditable(activeProgram, moved.cycle) || !isCycleEditable(activeProgram, cycle)) {
-      setToast('Solo se pueden mover materias entre ciclos futuros.')
-      return
-    }
-    setSubjects((items) => items.map((item) => (item.id === id ? { ...item, cycle } : item)))
-    setToast(`${moved?.name || 'La asignatura'} se movió al ciclo ${cycle}.`)
-  }
-
-  const reorderSubject = (id, direction) => {
-    const subject = subjects.find((item) => item.id === id)
-    if (!subject || !isCycleEditable(activeProgram, subject.cycle)) return
-    setSubjects((items) => {
-      const current = items.find((item) => item.id === id)
-      const sameCycle = items.filter((item) => item.programId === current.programId && item.cycle === current.cycle)
-      const position = sameCycle.findIndex((item) => item.id === id)
-      const target = sameCycle[position + direction]
-      if (!target) return items
-      const a = items.findIndex((item) => item.id === current.id)
-      const b = items.findIndex((item) => item.id === target.id)
-      const copy = [...items]
-      ;[copy[a], copy[b]] = [copy[b], copy[a]]
-      return copy
-    })
-  }
-
-  const removeSubject = (id) => {
-    const removed = subjects.find((item) => String(item.id) === String(id))
-    if (!removed) return
-    if (!isCycleEditable(activeProgram, removed.cycle)) {
-      setToast('Solo se pueden modificar ciclos futuros.')
-      return
-    }
-    setSubjects((items) => removed.catalogAssignment
-      ? items.filter((item) => String(item.id) !== String(id))
-      : items.map((item) => (String(item.id) === String(id) ? { ...item, programId: null, ownerProgramId: item.ownerProgramId || removed.programId } : item))
-    )
-    setToast(`${removed.name} se quitó del mapa y está disponible para asignarse.`)
-  }
-
-  const assignSubject = (key, cycle) => {
-    if (!activeProgram) return
-    if (!isCycleEditable(activeProgram, cycle)) {
-      setToast('Solo se pueden asignar materias a ciclos futuros.')
-      return
-    }
-
-    const source = subjects
-      .filter((item) => !item.isElectiveSlot && item.type !== 'Optativa' && belongsToProgram(item, activeProgram.id))
-      .find((item) => item.key === key)
-    if (!source) return
-
-    setSubjects((items) => {
-      const alreadyAssigned = items.some((item) => item.programId === activeProgram.id && item.key === key)
-      if (alreadyAssigned) return items
-      return [...items, {
-        ...source,
-        id: `assignment-${activeProgram.id}-${key}-${Date.now()}`,
-        cycle,
-        programId: activeProgram.id,
-        ownerProgramId: activeProgram.id,
-        catalogAssignment: true,
-        isElectiveSlot: false,
-      }]
-    })
-    setToast(`${source.name} se agregó al ciclo ${cycle}.`)
-  }
-
-  const handleDropSubject = (subjectId, targetCycle, targetSubjectId = null, placeAfter = false) => {
-    if (!subjectId) return
-    const numericTargetCycle = Number(targetCycle)
-    const strSubjectId = String(subjectId)
-    const strTargetSubjectId = targetSubjectId ? String(targetSubjectId) : null
-    const sourceSubject = subjects.find((item) => String(item.id) === strSubjectId)
-    if (!sourceSubject || !isCycleEditable(activeProgram, sourceSubject.cycle) || !isCycleEditable(activeProgram, numericTargetCycle)) {
-      setToast('Solo se pueden mover materias entre ciclos futuros.')
-      return
-    }
-
-    setSubjects((items) => {
-      const subjectToMove = items.find((s) => String(s.id) === strSubjectId)
-      if (!subjectToMove) return items
-
-      // Remove dragged subject from the list
-      const remaining = items.filter((s) => String(s.id) !== strSubjectId)
-      const updatedSubject = { ...subjectToMove, cycle: numericTargetCycle }
-
-      // Case 1: Dropped onto a specific target subject
-      if (strTargetSubjectId && strTargetSubjectId !== strSubjectId) {
-        const targetIndex = remaining.findIndex((s) => String(s.id) === strTargetSubjectId)
-        if (targetIndex !== -1) {
-          const insertIndex = placeAfter ? targetIndex + 1 : targetIndex
-          const result = [...remaining]
-          result.splice(insertIndex, 0, updatedSubject)
-          return result
-        }
-      }
-
-      // Case 2: Dropped into a cycle column (append at the end of that cycle)
-      const cycleItems = remaining.filter((s) => s.programId === subjectToMove.programId && Number(s.cycle) === numericTargetCycle)
-      if (cycleItems.length > 0) {
-        const lastItem = cycleItems[cycleItems.length - 1]
-        const lastIndex = remaining.findIndex((s) => String(s.id) === String(lastItem.id))
-        const result = [...remaining]
-        result.splice(lastIndex + 1, 0, updatedSubject)
-        return result
-      } else {
-        // No items in this cycle yet, find position among surrounding cycles
-        const nextCycleItem = remaining.find((s) => s.programId === subjectToMove.programId && Number(s.cycle) > numericTargetCycle)
-        if (nextCycleItem) {
-          const nextIndex = remaining.findIndex((s) => String(s.id) === String(nextCycleItem.id))
-          const result = [...remaining]
-          result.splice(nextIndex, 0, updatedSubject)
-          return result
-        }
-        return [...remaining, updatedSubject]
-      }
-    })
-
-    const moved = subjects.find((s) => String(s.id) === strSubjectId)
-    setToast(`${moved?.name || 'La asignatura'} se colocó en el ciclo ${numericTargetCycle}.`)
+  const saveSubject = async (saved) => {
+    const modal = subjectModal
+    if (!activeProgram || modal?.readOnly) return
+    const result = await curriculum.saveSubject(activeProgram.id, saved, { source: modal.source })
+    if (result) setSubjectModal((current) => current === modal ? null : current)
   }
 
   const [title, subtitle] = getHeaderMeta(location.pathname)
@@ -580,13 +390,13 @@ function App() {
                 subjects={subjects}
                 electives={electives}
                 onSetActiveProgram={setActiveProgram}
-                onAddSubject={(cycle) => isCycleEditable(activeProgram, cycle) && setSubjectModal({ subject: null, cycle, source: 'map' })}
-                onEditSubject={(subject) => setSubjectModal({ subject, cycle: subject.cycle, source: 'map', readOnly: !isCycleEditable(activeProgram, subject.cycle) })}
-                onMoveSubject={moveSubject}
-                onReorderSubject={reorderSubject}
-                onRemoveSubject={removeSubject}
-                onAssignSubject={assignSubject}
-                onDropSubject={handleDropSubject}
+                onAddSubject={(cycle) => isCycleEditable(activeProgram, cycle) && openSubjectModal({ subject: null, cycle, source: 'map' })}
+                onEditSubject={(subject) => openSubjectModal({ subject, cycle: subject.cycle, source: 'map', readOnly: !isCycleEditable(activeProgram, subject.cycle) })}
+                onMoveSubject={(id, cycle) => curriculum.moveSubject(activeProgram.id, id, cycle)}
+                onReorderSubject={(id, direction) => curriculum.reorderSubject(activeProgram.id, id, direction)}
+                onRemoveSubject={(id) => curriculum.removeSubject(activeProgram.id, id)}
+                onAssignSubject={(key, cycle) => curriculum.assignSubject(activeProgram.id, key, cycle)}
+                onDropSubject={(id, cycle, targetId, placeAfter) => curriculum.moveSubject(activeProgram.id, id, cycle, targetId, placeAfter)}
                 onDuplicate={(program) => setDuplicateModalProgram(program)}
                 onExport={(program) => setExportProgram(program)}
                 onNotify={setToast}
@@ -605,7 +415,7 @@ function App() {
                 onSelectProgram={setActiveProgram}
                 onEdit={(subject) => {
                   if (!subject && isPlanReadOnly(activeProgram)) return
-                  setSubjectModal({ subject, cycle: subject?.cycle || 7, source: 'catalog', readOnly: isPlanReadOnly(activeProgram) || Boolean(subject?.programId === activeProgram?.id && !isCycleEditable(activeProgram, subject.cycle)) })
+                  openSubjectModal({ subject, cycle: subject?.cycle || 7, source: 'catalog', readOnly: isPlanReadOnly(activeProgram) || Boolean(subject?.programId === activeProgram?.id && !isCycleEditable(activeProgram, subject.cycle)) })
                 }}
               />
             }
@@ -626,6 +436,8 @@ function App() {
           cycle={subjectModal.cycle || 1}
           program={activeProgram}
           source={subjectModal.source}
+          pending={Boolean(curriculum.pending)}
+          saveError={curriculum.error}
           readOnly={subjectModal.readOnly || isPlanReadOnly(activeProgram)}
           subjects={[
             ...subjects.filter((subject) => belongsToProgram(subject, activeProgram?.id)),

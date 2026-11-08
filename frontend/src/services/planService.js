@@ -1,6 +1,7 @@
 import { PLAN_STATUSES, STATUS_CODES } from '../utils/planStatus.js'
 
-export const USE_MOCK = import.meta.env?.VITE_USE_MOCK !== 'false'
+import { USE_MOCK } from './apiClient.js'
+export { USE_MOCK } from './apiClient.js'
 const API_URL = import.meta.env?.VITE_API_URL || ''
 
 /**
