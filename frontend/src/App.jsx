@@ -17,6 +17,7 @@ import { createMissingDeanerySubjects } from './data/deaneryRequirements'
 import { validateCurriculum } from './utils/validation'
 import { createPlanService } from './services/planService'
 import { applyPlanUpdate, isPlanReadOnly } from './utils/planStatus'
+import { belongsToProgram, upsertCatalogSubject } from './utils/subjectCatalog'
 import { isCycleEditable } from './utils/cycleStatus'
 
 function getHeaderMeta(pathname) {
@@ -39,10 +40,6 @@ function getHeaderMeta(pathname) {
     return ['Exportaciones', 'Preparación de entregables institucionales']
   }
   return ['Programas', 'Portafolio y versiones curriculares']
-}
-
-function belongsToProgram(subject, programId) {
-  return (subject.ownerProgramId ?? subject.programId) === programId
 }
 
 function createProgramId() {
@@ -373,11 +370,7 @@ function App() {
           exists ? items.map((item) => (item.id === saved.id ? savedForProgram : item)) : [...items, savedForProgram]
         )
       } else {
-        setSubjects((items) =>
-          items.some((item) => item.id === saved.id)
-            ? items.map((item) => (item.id === saved.id ? saved : item))
-            : [...items, { ...saved, programId: null }]
-        )
+        setSubjects((items) => upsertCatalogSubject(items, saved, activeProgram.id))
       }
     } else {
       setSubjects((items) =>
@@ -387,7 +380,9 @@ function App() {
       )
     }
     setSubjectModal(null)
-    setToast('La asignatura se actualizó y las validaciones fueron recalculadas.')
+    setToast(subjectModal.source === 'catalog' && !original && saved.type !== 'Optativa'
+      ? 'Asignatura guardada en el catálogo de la carrera. Asígnala al mapa desde Materias disponibles para que cuente en la validación.'
+      : 'La asignatura se actualizó y las validaciones fueron recalculadas.')
   }
 
   const moveSubject = (id, cycle) => {
@@ -610,7 +605,7 @@ function App() {
                 onSelectProgram={setActiveProgram}
                 onEdit={(subject) => {
                   if (!subject && isPlanReadOnly(activeProgram)) return
-                  setSubjectModal({ subject, cycle: subject?.cycle || 7, source: 'catalog', readOnly: isPlanReadOnly(activeProgram) || Boolean(subject && !isCycleEditable(activeProgram, subject.cycle)) })
+                  setSubjectModal({ subject, cycle: subject?.cycle || 7, source: 'catalog', readOnly: isPlanReadOnly(activeProgram) || Boolean(subject?.programId === activeProgram?.id && !isCycleEditable(activeProgram, subject.cycle)) })
                 }}
               />
             }
@@ -633,7 +628,7 @@ function App() {
           source={subjectModal.source}
           readOnly={subjectModal.readOnly || isPlanReadOnly(activeProgram)}
           subjects={[
-            ...subjects.filter((subject) => subject.programId === activeProgram?.id),
+            ...subjects.filter((subject) => belongsToProgram(subject, activeProgram?.id)),
             ...electives.filter((subject) => (subject.programId || initialProgramId) === activeProgram?.id),
           ]}
           onClose={() => setSubjectModal(null)}

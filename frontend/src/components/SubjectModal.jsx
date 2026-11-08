@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Icon from './Icon'
 import { areasByLevel } from '../data/mockData'
+import { nextSubjectKey } from '../utils/subjectCatalog'
 import { isCycleEditable } from '../utils/cycleStatus'
 
 const inputClass = 'mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50'
@@ -24,8 +25,7 @@ export default function SubjectModal({ open, subject, cycle, program, source = '
   }, [onClose])
 
   const credits = useMemo(() => ((Number(form.teacherHours) + Number(form.independentHours)) / 16).toFixed(2).replace('.00', ''), [form.teacherHours, form.independentHours])
-  const previewPosition = subjects.filter((item) => !item.isElectiveSlot).length + 1
-  const previewKey = form.isElectiveSlot ? 'Sin clave' : subject?.key || `${program.mnemonic}${String(previewPosition).padStart(3, '0')}`
+  const previewKey = form.isElectiveSlot ? 'Sin clave' : subject?.key || nextSubjectKey(subjects, program.mnemonic)
   const minTeacher = program.modality === 'No escolarizada' ? 64 : 32
   const minIndependent = program.modality === 'No escolarizada' ? 80 : 64
   const optativeInvalid = form.type === 'Optativa' && !form.isElectiveSlot && (form.teacherHours < minTeacher || form.independentHours < minIndependent)
@@ -46,7 +46,7 @@ export default function SubjectModal({ open, subject, cycle, program, source = '
     <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/40 p-0 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="subject-modal-title">
       <form onSubmit={submit} className="flex max-h-[96vh] w-full max-w-4xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-h-[92vh] sm:rounded-3xl">
         <header className="flex items-start justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
-          <div><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-blue-700">{program.cycleLabel} {form.cycle || cycle}</p><h2 id="subject-modal-title" className="mt-1 text-xl font-bold tracking-tight text-slate-950">{readOnly ? 'Consultar asignatura · Solo lectura' : subject ? 'Editar asignatura' : 'Nueva asignatura'}</h2><p className="mt-1 text-xs text-slate-500">La clave y los créditos se calculan automáticamente.</p></div>
+          <div><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-blue-700">{program.cycleLabel} {form.cycle || cycle}</p><h2 id="subject-modal-title" className="mt-1 text-xl font-bold tracking-tight text-slate-950">{readOnly ? 'Consultar asignatura · Solo lectura' : subject ? 'Editar asignatura' : 'Nueva asignatura'}</h2><p className="mt-1 text-xs text-slate-500">{!isMapContext && !subject ? 'Se guardará en el catálogo de esta carrera. Después asígnala al mapa desde Materias disponibles.' : 'La clave y los créditos se calculan automáticamente.'}</p></div>
           <button type="button" onClick={onClose} aria-label="Cerrar" className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><Icon name="x" size={17} /></button>
         </header>
 
