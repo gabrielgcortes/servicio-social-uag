@@ -11,9 +11,11 @@ let MapPage
 let SubjectModal
 let CurriculumMap
 let App
+let initialProgramId
 before(async () => {
   server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), server: { middlewareMode: true, hmr: false, ws: false } })
   App = (await server.ssrLoadModule('/src/App.jsx')).default
+  initialProgramId = (await server.ssrLoadModule('/src/data/mockData.js')).initialProgramId
   MapPage = (await server.ssrLoadModule('/src/pages/MapPage.jsx')).default
   SubjectModal = (await server.ssrLoadModule('/src/components/SubjectModal.jsx')).default
   CurriculumMap = (await server.ssrLoadModule('/src/components/CurriculumMap.jsx')).default
@@ -79,7 +81,7 @@ test('read only subject modal disables its fieldset and omits save', () => {
 test('App bootstraps the extracted curriculum hook and renders catalog and map routes', () => {
   const render = (path) => renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, createElement(App)))
   assert.match(render('/catalogo'), /Asignaturas y optativas/)
-  assert.match(render('/mapas/demo-1'), /Plan oficial en curso/)
+  assert.match(render(`/mapas/${initialProgramId}`), /Plan oficial en curso/)
 })
 
 test('pending subject saves disable fields and submit; errors stay visible for retry', () => {

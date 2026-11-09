@@ -83,7 +83,8 @@ function MapPageWrapper({
   statusPending,
 }) {
   const { id } = useParams()
-  const program = programs.find((item) => item.id === id) || programs[0]
+  const navigate = useNavigate()
+  const program = programs.find((item) => item.id === id)
   const programSubjects = useMemo(() => subjects.filter((subject) => subject.programId === program?.id), [subjects, program?.id])
   const availableSubjects = [
     ...subjects.filter((subject) => !subject.isElectiveSlot && subject.type !== 'Optativa' && belongsToProgram(subject, program?.id)),
@@ -100,12 +101,31 @@ function MapPageWrapper({
     [programSubjects, program, electives]
   )
 
-  if (!program) {
-    return <Navigate to="/programas" replace />
+  if (id && !program) {
+    return <Navigate to="/mapas" replace />
   }
 
   return (
-    <MapPage
+    <>
+      <section className="border-b border-slate-200 bg-white px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1700px]">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">Mapas curriculares</p>
+          <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">Selecciona una carrera</h2>
+          <p className="mt-2 text-sm text-slate-500">Elige la carrera y el plan que quieres consultar para ver su mapa curricular.</p>
+          <label className="mt-6 block max-w-xl">
+            <span className="text-xs font-bold text-slate-700">Carrera</span>
+            <select
+              value={program?.id || ''}
+              onChange={(event) => navigate(event.target.value ? `/mapas/${event.target.value}` : '/mapas')}
+              className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+            >
+              <option value="">Selecciona una carrera...</option>
+              {programs.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.plan}</option>)}
+            </select>
+          </label>
+        </div>
+      </section>
+      {program ? <MapPage
       key={program.id}
       program={program}
       subjects={programSubjects}
@@ -123,7 +143,8 @@ function MapPageWrapper({
       onNotify={onNotify}
       onUpdateStatus={onUpdateStatus}
       statusPending={statusPending}
-    />
+      /> : <p className="px-4 py-12 text-center text-sm text-slate-400">{programs.length ? 'Selecciona una carrera para ver su mapa curricular.' : 'Aún no hay carreras registradas.'}</p>}
+    </>
   )
 }
 
@@ -324,7 +345,6 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
       <Sidebar
-        activeProgramId={activeProgram?.id || programs[0]?.id}
         open={menuOpen}
         desktopOpen={sidebarVisible}
         onClose={() => setMenuOpen(false)}
@@ -374,16 +394,7 @@ function App() {
             }
           />
           <Route
-            path="/mapas"
-            element={
-              <Navigate
-                to={`/mapas/${activeProgram?.id || programs[0]?.id || 'demo-1'}`}
-                replace
-              />
-            }
-          />
-          <Route
-            path="/mapas/:id"
+            path="/mapas/:id?"
             element={
               <MapPageWrapper
                 programs={programs}

@@ -9,7 +9,7 @@ const navItems = [
   { id: 'exports', label: 'Exportaciones', icon: 'export', path: '/exportaciones' },
 ]
 
-export default function Sidebar({ activeProgramId, open, desktopOpen, onClose }) {
+export default function Sidebar({ open, desktopOpen, onClose }) {
   const location = useLocation()
   return (
     <>
@@ -28,7 +28,6 @@ export default function Sidebar({ activeProgramId, open, desktopOpen, onClose })
         <div className="mt-8 px-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Navegación</div>
         <nav className="mt-3 space-y-1" aria-label="Navegación principal">
           {navItems.map((item) => {
-            const targetPath = item.id === 'map' && activeProgramId ? `/mapas/${activeProgramId}` : item.path
             const isItemActive = (item.id === 'programs' && (location.pathname === '/' || location.pathname.startsWith('/programas'))) ||
               (item.id === 'map' && location.pathname.startsWith('/mapas')) ||
               (item.id === 'catalog' && location.pathname.startsWith('/catalogo')) ||
@@ -38,7 +37,7 @@ export default function Sidebar({ activeProgramId, open, desktopOpen, onClose })
             return (
               <NavLink
                 key={item.id}
-                to={targetPath}
+                to={item.path}
                 onClick={onClose}
                 className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
                   isItemActive
