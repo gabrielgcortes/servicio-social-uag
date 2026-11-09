@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Icon from './Icon'
 import { areasByLevel } from '../data/mockData'
-import { nextSubjectKey } from '../utils/subjectCatalog'
+import { getCatalogSubjects, nextSubjectKey } from '../utils/subjectCatalog'
 import { isCycleEditable } from '../utils/cycleStatus'
 
 const inputClass = 'mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50'
@@ -26,6 +26,9 @@ export default function SubjectModal({ open, subject, cycle, program, source = '
 
   const credits = useMemo(() => ((Number(form.teacherHours) + Number(form.independentHours)) / 16).toFixed(2).replace('.00', ''), [form.teacherHours, form.independentHours])
   const previewKey = form.isElectiveSlot ? 'Sin clave' : subject?.key || nextSubjectKey(subjects, program.mnemonic)
+  const prerequisiteOptions = getCatalogSubjects(subjects, [], program.id)
+    .filter((item) => item.key && item.id !== subject?.id && item.key !== previewKey)
+    .sort((a, b) => a.key.localeCompare(b.key, 'es', { numeric: true }))
   const minTeacher = program.modality === 'No escolarizada' ? 64 : 32
   const minIndependent = program.modality === 'No escolarizada' ? 80 : 64
   const optativeInvalid = form.type === 'Optativa' && !form.isElectiveSlot && (form.teacherHours < minTeacher || form.independentHours < minIndependent)
@@ -73,7 +76,7 @@ export default function SubjectModal({ open, subject, cycle, program, source = '
                   <Field label="Créditos"><div className="mt-1.5 flex h-10 items-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-sm font-extrabold text-emerald-800">{credits}</div></Field>
                   <Field label="Instalación"><select value={form.room} onChange={(e) => set('room', e.target.value)} className={inputClass}><option value="A">A · Aula</option><option value="L">L · Laboratorio</option><option value="O">O · Otro</option></select></Field>
                   <Field label="Modalidad"><select value={form.modality} onChange={(e) => set('modality', e.target.value)} className={inputClass}><option>Escolarizada</option><option>No escolarizada</option><option>Mixta</option></select></Field>
-                  {!form.isElectiveSlot && <><Field label="Seriación / prerrequisito"><select value={form.prerequisite} onChange={(e) => set('prerequisite', e.target.value)} className={inputClass}><option value="">Sin seriación</option>{subjects.filter((item) => item.key && item.id !== subject?.id && item.cycle < (form.cycle || cycle)).map((item) => <option key={item.id} value={item.key}>{item.key} · {item.name}</option>)}</select></Field><Field label="Docente sugerido"><input value={form.suggestedTeacher} onChange={(e) => set('suggestedTeacher', e.target.value)} className={inputClass} placeholder="Perfil o nombre" /></Field><Field label="Programa de asignatura"><input value={form.programRef} onChange={(e) => set('programRef', e.target.value)} className={inputClass} placeholder="URL o referencia" /></Field></>}
+                  {!form.isElectiveSlot && <><Field label="Seriación / prerrequisito"><select aria-describedby="prerequisite-hint" value={form.prerequisite} onChange={(e) => set('prerequisite', e.target.value)} className={inputClass}><option value="">Sin seriación</option>{prerequisiteOptions.map((item) => <option key={item.id} value={item.key}>{item.key} · {item.name}</option>)}</select><p id="prerequisite-hint" className="mt-1.5 text-[10px] text-slate-500">El prerrequisito debe estar en un ciclo anterior en el mapa. Si aún no lo está, ajusta su ubicación para resolver la validación de seriación.</p></Field><Field label="Docente sugerido"><input value={form.suggestedTeacher} onChange={(e) => set('suggestedTeacher', e.target.value)} className={inputClass} placeholder="Perfil o nombre" /></Field><Field label="Programa de asignatura"><input value={form.programRef} onChange={(e) => set('programRef', e.target.value)} className={inputClass} placeholder="URL o referencia" /></Field></>}
                 </div>
               </section>
 

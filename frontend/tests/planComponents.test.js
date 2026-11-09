@@ -91,3 +91,20 @@ test('pending subject saves disable fields and submit; errors stay visible for r
   assert.match(html, /Guardando…/)
   assert.match(html, /role="alert"[^>]*>Error de guardado simulado/)
 })
+
+test('prerequisites include capstones regardless of placement and exclude self, duplicates and other careers', () => {
+  const second = { ...subject, id: 'capstone-2', key: 'PRU002', name: 'Capstone II', cycle: 7, capstone: true, programId: program.id }
+  for (const cycle of [6, 7, 8]) {
+    const first = { ...second, id: 'capstone-1', key: 'PRU001', name: 'Capstone I', cycle }
+    const html = renderToStaticMarkup(createElement(SubjectModal, {
+      open: true, subject: second, cycle: 7, program: { ...program, cycles: 8 },
+      subjects: [first, { ...first, id: 'placement', catalogAssignment: true }, second,
+        { ...second, id: 'self-placement', catalogAssignment: true },
+        { ...first, id: 'foreign', key: 'OTH001', programId: 'other' }],
+    }))
+    const options = html.match(/<select[^>]*aria-describedby="prerequisite-hint"[^>]*>(.*?)<\/select>/)[1]
+    assert.equal((options.match(/value="PRU001"/g) || []).length, 1)
+    assert.match(options, /Capstone I/)
+    assert.doesNotMatch(options, /PRU002|OTH001/)
+  }
+})
